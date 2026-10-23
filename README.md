@@ -1,3 +1,5 @@
+**中文** | [English](README.en.md)
+
 # 魔鬼计算 · N-Back 心算
 
 一个完全离线的单文件心算记忆小游戏：一边计算当前题，一边回答 **N 题前**的答案。
@@ -83,7 +85,11 @@ preview/           # 桌面 / 手机 / 暗色主题预览图
 
 建议使用较新的 Chrome / Edge；支持桌面、平板和手机宽度，已在 1440 / 390 / 320px 下验证。
 
-## English
+## 许可
 
-A completely offline, single-file N-back mental math game. Open `魔鬼计算.html` in Chrome or Edge — no install, server, or network needed. Use the `中 / EN` switch in the header to change the interface language; the choice is remembered. The game keeps the language it started with, and you can switch again from the home or result screen. Endless mode uses 0–9 answers with one-tap submission; normal mode keeps the 25-question round with delete/confirm.
+见 [LICENSE](LICENSE)。
+
+---
+
+**中文** | [English](README.en.md)
 
