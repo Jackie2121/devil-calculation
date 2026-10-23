@@ -330,7 +330,8 @@ test('quick best only compares completed 20-question all-four rounds', () => {
   assert.equal(best.score, 2000);
   assert.equal(best.avgMs, 2000);
   assert.equal(E.findQuickBest(sessions, { n: 3, digits: 1, ops: 'all' }), null);
-  assert.equal(E.findQuickBest([{ mode: 'endless', n: 2, ops: 'all', total: 20, correct: 18, score: 1800, avgMs: 900 }], { n: 2 }), null);
+  assert.equal(E.findQuickBest([{ mode: 'endless', n: 2, ops: 'all', total: 20, correct: 16, score: 1600, avgMs: 900 }], { n: 2 }), null);
+  assert.equal(E.findQuickBest([{ mode: 'endless', n: 2, ops: 'all', total: 20, correct: 17, score: 1700, avgMs: 900 }], { n: 2 }).score, 1700);
 });
 
 test('rank thresholds match the UI contract', () => {

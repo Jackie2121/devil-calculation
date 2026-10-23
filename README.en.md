@@ -23,8 +23,8 @@ Open [`魔鬼计算.html`](魔鬼计算.html) in Chrome or Edge. No install, ser
 - Always uses **all four operations**; quick mode has no operation selector
 - A 3-column keypad with only 0–9; delete and confirm are hidden, and 0 is centered
 - A 20-question progress bar at the top; **tap a digit to submit immediately**
-- After 20 questions, the round is scored; an accuracy **strictly above 90%** (19/20 or 20/20) unlocks the next back level
-- Below that, stay at the current level and replay the round
+- After 20 questions, the round is scored; an accuracy of **at least 85%** (17/20 or better) unlocks the next back level
+- Below 85%, stay at the current level and replay the round
 - Passing raises the setup back level by one (max 5); quitting early discards the round
 - Quick best records only include passing rounds; history keeps every completed round
 

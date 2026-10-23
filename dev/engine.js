@@ -500,7 +500,7 @@
       session
       && session.mode === 'endless'
       && session.total === QUICK_TOTAL
-      && session.correct > QUICK_TOTAL * 0.9
+      && session.correct * 100 >= QUICK_TOTAL * 85
     ));
     return findEndlessBest(quickSessions, { ...normalized, ops: 'all', digits: 1 });
   }
