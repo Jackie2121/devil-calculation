@@ -4037,13 +4037,6 @@ html[data-theme] .guide-panel .example {
           <p class="eyebrow"><span class="eyebrow-dot"></span><span data-i18n="hero_eyebrow">WORKING MEMORY · 心算训练</span></p>
           <h1 id="home-title" data-i18n-html="hero_title_html">记住 N 题前，<br><em>而不是眼前。</em></h1>
           <p class="lede" data-i18n-html="hero_lede_html">一边计算新题，一边回溯旧答案。当前算式只是干扰项，<br class="desktop-break">真正要输的是 N 题之前那道题的答案。</p>
-          <div class="hero-tags">
-            <span data-i18n-html="tag_round_html"><b>25</b> 题 / 局</span>
-            <span data-i18n-html="tag_back_html"><b>1–5</b> 回溯</span>
-            <span data-i18n-html="tag_ops_html"><b>4</b> 种运算</span>
-            <span data-i18n-html="tag_endless_html"><b>∞</b> 无尽 0–9</span>
-            <span data-i18n-html="tag_offline_html"><b>0</b> 联网</span>
-          </div>
         </div>
 
         <section class="panel setup-panel" aria-labelledby="setup-title">
@@ -4140,53 +4133,6 @@ html[data-theme] .guide-panel .example {
           </div>
         </section>
       </div>
-
-      <aside class="panel guide-panel" aria-labelledby="guide-title">
-        <div class="guide-grid">
-          <div class="guide-copy">
-            <div class="panel-head">
-              <div>
-                <p class="kicker">HOW IT WORKS</p>
-                <h2 id="guide-title" data-i18n="guide_title">别答眼前这道题</h2>
-              </div>
-              <span class="guide-mark" aria-hidden="true">N</span>
-            </div>
-            <ol class="steps">
-              <li>
-                <span class="step-num" aria-hidden="true">01</span>
-                <div>
-                  <b data-i18n="guide_step1_title">先算，再记</b>
-                  <p data-i18n="guide_step1_text">每题出现时，先算出答案，把它放进脑子里的记忆队列。</p>
-                </div>
-              </li>
-              <li>
-                <span class="step-num" aria-hidden="true">02</span>
-                <div>
-                  <b data-i18n="guide_step2_title">回头看 N 题</b>
-                  <p data-i18n="guide_step2_text">从第 N+1 题起，输入的是 N 题前那道题的答案。当前题只是新的记忆材料。</p>
-                </div>
-              </li>
-              <li>
-                <span class="step-num" aria-hidden="true">03</span>
-                <div>
-                  <b data-i18n="guide_step3_title">连续训练</b>
-                  <p data-i18n="guide_step3_text">普通局 25 题；无尽关一直答到你想停。答错不中断，会显示旧题的正确答案。</p>
-                </div>
-              </li>
-            </ol>
-            <p class="fineprint" data-i18n="guide_fineprint">减法不会出现负数，除法保证整除。两位数模式下，加减为两位 ± 两位，乘除为两位 ×/÷ 一位。无尽关所有答案固定为 0–9。</p>
-            <button id="guide-help-btn" class="inline-link" type="button"><span data-i18n="guide_more">查看完整玩法</span> <span aria-hidden="true">→</span></button>
-          </div>
-
-          <div class="example" aria-label="2-回溯示例" data-i18n-aria="example_aria">
-            <div class="example-head"><span data-i18n="example_back">2-回溯示例</span><span data-i18n="example_now">当前是第 3 题</span></div>
-            <div class="example-row"><span class="ex-q">3 + 4</span><span class="ex-tag" data-i18n="example_q1">第 1 题 · 记住 7</span></div>
-            <div class="example-row"><span class="ex-q">9 − 5</span><span class="ex-tag" data-i18n="example_q2">第 2 题 · 记住 4</span></div>
-            <div class="example-row ex-now"><span class="ex-q">6 × 3</span><span class="ex-tag" data-i18n="example_q3">第 3 题 · 别答 18</span></div>
-            <div class="example-answer"><span data-i18n="example_answer_label">你要回答</span><strong>7</strong><span data-i18n="example_answer_note">第 1 题的答案</span></div>
-          </div>
-        </div>
-      </aside>
 
       <footer class="site-foot">
         <span data-i18n="footer_code">所有代码和数据都在这个网页里</span>
@@ -6908,7 +6854,6 @@ html[data-theme] .guide-panel .example {
     $('history-btn').addEventListener('click', openHistory);
     $('result-history-btn').addEventListener('click', openHistory);
     $('help-btn').addEventListener('click', openHelp);
-    $('guide-help-btn').addEventListener('click', openHelp);
 
     $('brand-link').addEventListener('click', (event) => {
       event.preventDefault();

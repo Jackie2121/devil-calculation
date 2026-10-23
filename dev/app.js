@@ -1957,7 +1957,6 @@
     $('history-btn').addEventListener('click', openHistory);
     $('result-history-btn').addEventListener('click', openHistory);
     $('help-btn').addEventListener('click', openHelp);
-    $('guide-help-btn').addEventListener('click', openHelp);
 
     $('brand-link').addEventListener('click', (event) => {
       event.preventDefault();
