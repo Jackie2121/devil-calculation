@@ -1,0 +1,6936 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3eee4">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="一个完全离线的 N-back 心算训练小游戏：支持 1–5 回溯、个位/两位数、加减与四则运算，以及 0–9 无尽关。">
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('devilCalcNBack.v1');
+        var saved = raw ? JSON.parse(raw) : null;
+        var theme = saved && (saved.theme === 'dark' || saved.theme === 'light')
+          ? saved.theme
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#111827' : '#f3eee4');
+      } catch (error) {}
+    })();
+  </script>
+  <title>魔鬼计算 · N-Back 心算训练</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23211c16'/%3E%3Cpath d='M18 45V19h6l16 18V19h6v26h-6L24 27v18z' fill='%23f3eee4'/%3E%3Ccircle cx='49' cy='15' r='5' fill='%23d9482b'/%3E%3C/svg%3E">
+  <style>
+:root {
+  --paper: #f3eee4;
+  --paper-deep: #ebe3d4;
+  --surface: #fffdf8;
+  --surface-soft: #faf5eb;
+  --surface-strong: #f6efe2;
+  --ink: #211c16;
+  --ink-soft: #3b342b;
+  --muted: #776b5d;
+  --muted-2: #9b8e7d;
+  --line: #ded2bf;
+  --line-strong: #c8b8a1;
+  --accent: #d9482b;
+  --accent-deep: #ad321b;
+  --accent-soft: #f8ddd3;
+  --teal: #13766a;
+  --teal-deep: #0c5d54;
+  --teal-soft: #dcefe9;
+  --gold: #a97713;
+  --blue: #3f6f9e;
+  --danger: #b83a2c;
+  --shadow-lg: 0 28px 60px -32px rgba(70, 50, 28, 0.4);
+  --shadow-md: 0 16px 36px -24px rgba(70, 50, 28, 0.35);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --font-sans: "Segoe UI", "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --key-h: clamp(46px, 7vh, 58px);
+  --deep: #211c16;
+  --deep-2: #2b241d;
+  --deep-fg: #f3eee4;
+  --deep-muted: rgba(243, 238, 228, 0.56);
+  --ring-track: rgba(33, 28, 22, 0.09);
+  --track: rgba(33, 28, 22, 0.1);
+}
+
+html[data-theme="dark"] {
+  --paper: #111827;
+  --paper-deep: #0b1120;
+  --surface: #374151;
+  --surface-soft: #1f2937;
+  --surface-strong: #4b5563;
+  --ink: #f9fafb;
+  --ink-soft: #e5e7eb;
+  --muted: #9ca3af;
+  --muted-2: #6b7280;
+  --line: #374151;
+  --line-strong: #4b5563;
+  --accent: #ff6b4a;
+  --accent-deep: #d94a2b;
+  --accent-soft: #3b211a;
+  --teal: #2dd4bf;
+  --teal-deep: #14b8a6;
+  --teal-soft: #134e4a;
+  --gold: #fbbf24;
+  --blue: #60a5fa;
+  --danger: #fb7185;
+  --shadow-lg: 0 28px 60px -32px rgba(0, 0, 0, 0.72);
+  --shadow-md: 0 16px 36px -24px rgba(0, 0, 0, 0.7);
+  --deep: #0b1120;
+  --deep-2: #111827;
+  --deep-fg: #f9fafb;
+  --deep-muted: rgba(249, 250, 251, 0.55);
+  --ring-track: rgba(156, 163, 175, 0.18);
+  --track: rgba(156, 163, 175, 0.18);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body[data-screen="game"] {
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: rgba(217, 72, 43, 0.22);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(760px 520px at 88% -4%, rgba(217, 72, 43, 0.13), transparent 68%),
+    radial-gradient(640px 560px at -6% 20%, rgba(19, 118, 106, 0.09), transparent 70%),
+    radial-gradient(720px 520px at 50% 110%, rgba(169, 119, 19, 0.08), transparent 70%);
+}
+
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(33, 28, 22, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(33, 28, 22, 0.035) 1px, transparent 1px);
+  background-size: 30px 30px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.55) 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.55) 58%, transparent 100%);
+}
+
+.ambient::after {
+  content: "N";
+  position: absolute;
+  right: -0.14em;
+  top: -0.3em;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: min(70vw, 880px);
+  line-height: 1;
+  font-weight: 700;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(33, 28, 22, 0.055);
+  transform: rotate(-8deg);
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 20px 32px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+body[data-screen="game"] .site-header {
+  display: none;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 18px -12px rgba(33, 28, 22, 0.8);
+  transition: transform 0.25s ease, border-radius 0.25s ease;
+}
+
+.brand-mark svg {
+  width: 23px;
+  height: 23px;
+  display: block;
+}
+
+.brand:hover .brand-mark {
+  transform: rotate(-5deg) scale(1.03);
+  border-radius: 13px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-text strong {
+  font-size: 18px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+}
+
+.brand-text small {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lang-btn {
+  height: 40px;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.55);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.lang-btn span {
+  min-width: 23px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+html[data-lang="zh"] .lang-zh,
+html[data-lang="en"] .lang-en {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lang-btn:hover {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.lang-btn:active {
+  transform: translateY(1px);
+}
+
+html[data-theme="dark"] .lang-btn {
+  background: rgba(31, 41, 55, 0.8);
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255, 253, 248, 0.55);
+  color: var(--ink-soft);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.icon-btn:active {
+  transform: translateY(1px);
+}
+
+.icon-btn svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
+
+html[data-theme="light"] .icon-sun,
+html[data-theme="dark"] .icon-moon {
+  display: none;
+}
+
+.icon-btn-sm {
+  width: 36px;
+  height: 36px;
+}
+
+.icon-btn-sm svg {
+  width: 17px;
+  height: 17px;
+}
+
+.text-btn {
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.text-btn:hover {
+  background: rgba(33, 28, 22, 0.055);
+}
+
+.text-btn svg {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+
+.main {
+  position: relative;
+  z-index: 1;
+}
+
+.screen[hidden] {
+  display: none !important;
+}
+
+.screen {
+  animation: screenIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.home {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 48px 32px 38px;
+}
+
+.home-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 0.82fr);
+  align-items: center;
+  gap: clamp(34px, 5vw, 62px);
+}
+
+.hero-copy {
+  min-width: 0;
+  max-width: 625px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(217, 72, 43, 0.1);
+}
+
+.hero-copy h1 {
+  margin: 16px 0 18px;
+  font-size: clamp(44px, 5.5vw, 76px);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.065em;
+}
+
+.hero-copy h1 em {
+  position: relative;
+  z-index: 0;
+  display: inline-block;
+  font-style: normal;
+  color: var(--accent);
+}
+
+.hero-copy h1 em::after {
+  content: "";
+  position: absolute;
+  left: -0.015em;
+  right: -0.015em;
+  bottom: 0.035em;
+  height: 0.17em;
+  z-index: -1;
+  border-radius: 3px;
+  background: rgba(217, 72, 43, 0.18);
+  transform: rotate(-0.6deg);
+}
+
+.lede {
+  max-width: 570px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 24px;
+}
+
+.hero-tags span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid rgba(33, 28, 22, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.42);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.hero-tags b {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink);
+}
+
+.memory-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  max-width: 610px;
+  margin-top: 31px;
+}
+
+.strip-card {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 76px;
+  padding: 11px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255, 253, 248, 0.66);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 7px;
+  box-shadow: 0 10px 20px -22px rgba(33, 28, 22, 0.5);
+}
+
+.strip-q {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.strip-tag {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 8.5px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.strip-tag b {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.strip-arrow {
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.strip-card-now {
+  border-color: var(--deep);
+  background: var(--deep);
+  color: var(--deep-fg);
+  box-shadow: 0 16px 26px -22px rgba(0, 0, 0, 0.55);
+}
+
+.strip-card-now .strip-q {
+  color: #ff8a70;
+}
+
+.strip-card-now .strip-tag {
+  color: rgba(243, 238, 228, 0.56);
+}
+
+.strip-card-now .strip-tag b {
+  color: #ffb09e;
+}
+
+.hero-art {
+  position: relative;
+  height: 340px;
+  min-width: 0;
+}
+
+.art-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  border: 1px solid rgba(33, 28, 22, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.art-orbit::before {
+  content: "";
+  position: absolute;
+  inset: 28px;
+  border: 1px dashed rgba(33, 28, 22, 0.12);
+  border-radius: 50%;
+}
+
+.art-orbit::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 6px rgba(19, 118, 106, 0.09);
+}
+
+.art-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 212px;
+  height: 126px;
+  padding: 17px 19px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  animation: floatCard 7s ease-in-out infinite;
+}
+
+.art-card-back {
+  transform: translate(-50%, -50%) translate(-43px, -66px) rotate(-7deg);
+  background: var(--surface-strong);
+  opacity: 0.72;
+  animation-delay: -1.2s;
+}
+
+.art-card-mid {
+  transform: translate(-50%, -50%) translate(42px, -8px) rotate(5deg);
+  background: var(--surface);
+  animation-delay: -3s;
+}
+
+.art-card-front {
+  z-index: 3;
+  transform: translate(-50%, -50%) translate(-4px, 63px) rotate(-2deg);
+  background: var(--deep);
+  color: var(--deep-fg);
+  border-color: var(--deep);
+  box-shadow: 0 26px 44px -26px rgba(0, 0, 0, 0.7);
+  animation-delay: -4.4s;
+}
+
+.art-q {
+  font-family: var(--font-mono);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.art-tag {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.11em;
+  color: var(--muted);
+}
+
+.art-card-front .art-tag {
+  color: rgba(243, 238, 228, 0.55);
+}
+
+.art-kicker {
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #fff8f2;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.art-card-front strong {
+  position: absolute;
+  top: 31px;
+  right: 21px;
+  font-family: var(--font-mono);
+  font-size: 64px;
+  line-height: 0.9;
+  font-weight: 800;
+  color: #ff8a70;
+  letter-spacing: -0.08em;
+}
+
+.art-return {
+  position: absolute;
+  right: 21px;
+  bottom: 14px;
+  font-size: 20px;
+  color: rgba(243, 238, 228, 0.7);
+}
+
+.art-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.art-spark-1 {
+  top: 42px;
+  left: 19%;
+  box-shadow: 0 0 0 5px rgba(217, 72, 43, 0.09);
+}
+
+.art-spark-2 {
+  right: 13%;
+  bottom: 35px;
+  width: 4px;
+  height: 4px;
+  background: var(--teal);
+  box-shadow: 0 0 0 5px rgba(19, 118, 106, 0.08);
+}
+
+.guide-panel {
+  position: relative;
+  overflow: hidden;
+  margin-top: 28px;
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+  align-items: stretch;
+  gap: clamp(24px, 4vw, 42px);
+}
+
+.guide-copy {
+  min-width: 0;
+}
+
+.guide-grid .example {
+  height: 100%;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.panel {
+  background: rgba(255, 253, 248, 0.86);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 30px;
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.kicker {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.round-badge {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  padding: 5px 9px;
+  border: 1px solid rgba(33, 28, 22, 0.12);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 19px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.mode-tab {
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.mode-tab span {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink-soft);
+}
+
+.mode-tab small {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--muted-2);
+}
+
+.mode-tab:hover {
+  background: rgba(255, 253, 248, 0.5);
+}
+
+.mode-tab[aria-checked="true"] {
+  background: var(--surface);
+  box-shadow: 0 2px 8px -5px rgba(33, 28, 22, 0.45);
+}
+
+.mode-tab[aria-checked="true"] span {
+  color: var(--ink);
+}
+
+.mode-tab[aria-checked="true"] small {
+  color: var(--accent);
+}
+
+.endless-info-text {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.field {
+  margin-top: 23px;
+}
+
+.field + .field {
+  border-top: 1px solid rgba(33, 28, 22, 0.075);
+  padding-top: 21px;
+}
+
+.field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 11px;
+}
+
+.field-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field-index {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--muted-2);
+  background: var(--surface-soft);
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pill-group {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.pill {
+  position: relative;
+  min-height: 53px;
+  padding: 8px 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.pill b {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.pill span {
+  font-size: 8.5px;
+  line-height: 1.2;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.pill:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.pill[aria-checked="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 9px 18px -13px rgba(33, 28, 22, 0.85);
+}
+
+.pill[aria-checked="true"] span {
+  color: rgba(243, 238, 228, 0.58);
+}
+
+.choice-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.choice {
+  position: relative;
+  min-height: 66px;
+  padding: 11px 38px 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.choice:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.choice-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.choice-sub {
+  font-size: 9.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.choice-check {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff8f2;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0;
+  transform: translateY(-50%) scale(0.5);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.choice[aria-checked="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 9px 18px -13px rgba(33, 28, 22, 0.85);
+}
+
+.choice[aria-checked="true"] .choice-sub {
+  color: rgba(243, 238, 228, 0.6);
+}
+
+.choice[aria-checked="true"] .choice-check {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 13px;
+  min-height: 50px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn svg {
+  display: block;
+}
+
+.btn-start {
+  width: 100%;
+  min-height: 58px;
+  margin-top: 26px;
+  border-color: var(--accent-deep);
+  background: var(--accent);
+  color: #fff8f2;
+  font-size: 16px;
+  letter-spacing: 0.045em;
+  box-shadow: 0 5px 0 var(--accent-deep), 0 20px 30px -20px rgba(217, 72, 43, 0.85);
+}
+
+.btn-start:hover {
+  background: #e15334;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 0 var(--accent-deep), 0 22px 32px -20px rgba(217, 72, 43, 0.9);
+}
+
+.btn-start:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--accent-deep);
+}
+
+.btn-start svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 0.2s ease;
+}
+
+.btn-start:hover svg {
+  transform: translateX(3px);
+}
+
+.setup-foot {
+  margin-top: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: center;
+}
+
+#best-note {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.foot-sep {
+  color: var(--line-strong);
+}
+
+.guide-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.guide-head {
+  position: relative;
+  z-index: 1;
+}
+
+.guide-mark {
+  flex: 0 0 auto;
+  margin-top: -11px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 55px;
+  line-height: 1;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--accent);
+  opacity: 0.17;
+  transform: rotate(6deg);
+}
+
+.steps {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 15px;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 11px;
+}
+
+.step-num {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(217, 72, 43, 0.28);
+  border-radius: 50%;
+  background: rgba(217, 72, 43, 0.06);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+}
+
+.steps b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.steps p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.example {
+  position: relative;
+  z-index: 1;
+  margin-top: 22px;
+  padding: 15px 16px 13px;
+  border-radius: 16px;
+  background: var(--deep);
+  color: var(--deep-fg);
+  box-shadow: 0 16px 26px -22px rgba(0, 0, 0, 0.55);
+}
+
+.example-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  color: rgba(243, 238, 228, 0.48);
+}
+
+.example-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px dashed rgba(243, 238, 228, 0.1);
+}
+
+.ex-q {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.ex-tag {
+  font-size: 9.5px;
+  color: rgba(243, 238, 228, 0.52);
+  text-align: right;
+}
+
+.ex-now .ex-q {
+  color: #ff8a70;
+}
+
+.ex-now .ex-tag {
+  color: #ffb09e;
+}
+
+.example-answer {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding-top: 10px;
+}
+
+.example-answer span {
+  font-size: 9px;
+  color: rgba(243, 238, 228, 0.52);
+}
+
+.example-answer strong {
+  font-family: var(--font-mono);
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 800;
+  color: #ff8a70;
+}
+
+.fineprint {
+  position: relative;
+  z-index: 1;
+  margin: 14px 0 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--muted-2);
+}
+
+.inline-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.inline-link span {
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+
+.inline-link:hover span {
+  transform: translateX(3px);
+}
+
+.guide-panel .inline-link {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+}
+
+.site-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 32px;
+  padding-bottom: 5px;
+  font-size: 10px;
+  color: var(--muted-2);
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Game ---------- */
+
+.game {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 540px;
+  overflow: hidden;
+}
+
+.game-shell {
+  width: min(100%, 610px);
+  height: 100%;
+  margin: 0 auto;
+  padding: max(14px, env(safe-area-inset-top)) 20px max(13px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.game-bar {
+  flex: 0 0 auto;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ghost-btn {
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  padding: 7px 9px;
+  margin-left: -9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ghost-btn:hover {
+  background: rgba(33, 28, 22, 0.055);
+  color: var(--ink);
+}
+
+.game-config {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.progress-block {
+  flex: 0 0 auto;
+  margin-top: 17px;
+}
+
+.progress-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+#score-text {
+  color: var(--ink-soft);
+  font-weight: 700;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+#score-text.bump {
+  animation: scoreBump 0.45s ease;
+}
+
+.segments {
+  display: grid;
+  grid-template-columns: repeat(25, minmax(0, 1fr));
+  gap: 3px;
+  height: 7px;
+  margin-top: 7px;
+}
+
+.seg {
+  border-radius: 2px;
+  background: var(--track);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.seg.done {
+  background: var(--teal);
+}
+
+.seg.wrong {
+  background: var(--accent);
+}
+
+.seg.current {
+  background: var(--ink);
+  transform: scaleY(1.55);
+}
+
+.endless-hud {
+  flex: 0 0 auto;
+  margin-top: 16px;
+  padding: 9px 0 10px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.endless-hud-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent-deep);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 72, 43, 0.1);
+  animation: pulseDot 1.9s ease-in-out infinite;
+}
+
+.endless-hud-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.endless-hud-stats span {
+  white-space: nowrap;
+}
+
+.endless-hud-stats b {
+  margin-left: 3px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+#screen-game[data-mode="endless"] .progress-block {
+  display: none !important;
+}
+
+#screen-game[data-mode="endless"] .answer-zone {
+  max-width: 380px;
+}
+
+#screen-game[data-mode="endless"] .answer-label,
+#screen-game[data-mode="endless"] .answer-box {
+  display: none !important;
+}
+
+#screen-game[data-mode="endless"] .feedback-line {
+  min-height: 28px;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#screen-game[data-mode="endless"] #backspace-btn,
+#screen-game[data-mode="endless"] #submit-btn {
+  display: none !important;
+}
+
+#screen-game[data-mode="endless"] .keypad [data-digit="0"] {
+  grid-column: 2;
+}
+
+#screen-game[data-mode="endless"] .key.is-correct {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #f4fffb;
+  box-shadow: 0 0 0 4px rgba(19, 118, 106, 0.1);
+}
+
+#screen-game[data-mode="endless"] .key.is-wrong {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff8f4;
+  box-shadow: 0 0 0 4px rgba(184, 58, 44, 0.1);
+}
+
+#screen-game[data-mode="endless"] .key.is-answer {
+  border-color: var(--teal);
+  color: var(--teal);
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+
+#screen-game[data-mode="endless"] .keypad.is-disabled {
+  opacity: 1;
+  pointer-events: none;
+}
+
+#screen-game[data-mode="endless"] .keypad.is-disabled .key {
+  opacity: 0.5;
+}
+
+#screen-game[data-mode="endless"] .keypad.is-disabled .key.is-correct,
+#screen-game[data-mode="endless"] .keypad.is-disabled .key.is-wrong,
+#screen-game[data-mode="endless"] .keypad.is-disabled .key.is-answer {
+  opacity: 1;
+}
+
+.play {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 7px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.state-row {
+  display: flex;
+  justify-content: center;
+}
+
+.state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgba(217, 72, 43, 0.18);
+  border-radius: 999px;
+  background: rgba(217, 72, 43, 0.065);
+  color: var(--accent-deep);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.state-chip[data-mode="answer"] {
+  border-color: rgba(19, 118, 106, 0.2);
+  background: rgba(19, 118, 106, 0.065);
+  color: var(--teal);
+}
+
+.state-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 72, 43, 0.1);
+  animation: pulseDot 1.9s ease-in-out infinite;
+}
+
+.state-chip[data-mode="answer"] .state-dot {
+  background: var(--teal);
+  box-shadow: 0 0 0 3px rgba(19, 118, 106, 0.1);
+}
+
+.expression-wrap {
+  width: 100%;
+  margin: clamp(17px, 3.2vh, 30px) 0 clamp(15px, 2.7vh, 24px);
+  text-align: center;
+}
+
+.expression {
+  min-height: 1.06em;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.13em;
+  font-size: clamp(52px, 12vw, 88px);
+  line-height: 1.06;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.expression .num {
+  font-feature-settings: "tnum";
+}
+
+.expression .op {
+  color: var(--accent);
+  font-size: 0.72em;
+  font-weight: 700;
+  transform: translateY(-0.035em);
+}
+
+.expression.swap {
+  animation: expressionIn 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.expression-sub {
+  margin: 9px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.answer-zone {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.answer-label {
+  margin-bottom: 7px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.answer-box {
+  position: relative;
+  min-height: 76px;
+  padding: 0 18px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 12px 24px -22px rgba(33, 28, 22, 0.65);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.answer-box.is-locked {
+  border-style: dashed;
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+.answer-box.is-correct {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  box-shadow: 0 0 0 4px rgba(19, 118, 106, 0.08);
+}
+
+.answer-box.is-wrong {
+  border-color: var(--danger);
+  background: #fbe4de;
+  box-shadow: 0 0 0 4px rgba(184, 58, 44, 0.08);
+}
+
+.answer-box.is-nudge {
+  animation: shakeBox 0.36s ease;
+}
+
+.answer-value {
+  font-family: var(--font-mono);
+  font-size: clamp(37px, 8vw, 49px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(0.028em);
+}
+
+.answer-box[data-empty="true"] .answer-value {
+  color: var(--muted-2);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.caret {
+  width: 2px;
+  height: 33px;
+  margin-left: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  opacity: 0;
+  animation: blinkCaret 1.05s steps(1) infinite;
+}
+
+.answer-box:not([data-empty="true"]) .caret {
+  opacity: 1;
+}
+
+.answer-box.is-locked .caret,
+.answer-box.is-correct .caret,
+.answer-box.is-wrong .caret {
+  display: none;
+}
+
+.feedback-line {
+  min-height: 21px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.feedback-line.correct {
+  color: var(--teal);
+}
+
+.feedback-line.wrong {
+  color: var(--danger);
+}
+
+.feedback-line.nudge {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.interaction {
+  width: 100%;
+  max-width: 380px;
+  min-height: calc(var(--key-h) * 4 + 24px);
+  margin: 13px auto 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: min-height 0.28s ease;
+}
+
+.interaction.is-memory {
+  min-height: 0;
+  margin-top: 6px;
+}
+
+.warm-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.memory-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 11px;
+  margin-bottom: 12px;
+}
+
+.memory-dots i {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  background: transparent;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.memory-dots i.done {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(217, 72, 43, 0.09);
+}
+
+.btn-accent {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 4px 0 rgba(33, 28, 22, 0.22);
+}
+
+.btn-accent:hover {
+  background: #302820;
+  transform: translateY(-1px);
+}
+
+.btn-accent:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(33, 28, 22, 0.22);
+}
+
+.btn-wide {
+  width: 100%;
+  min-height: 52px;
+}
+
+.warm-hint {
+  margin: 12px 0 0;
+  font-size: 10px;
+  color: var(--muted-2);
+  text-align: center;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.key {
+  height: var(--key-h);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: clamp(20px, 3.6vw, 23px);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(33, 28, 22, 0.07);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease, box-shadow 0.08s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.key:hover {
+  background: #fff;
+  border-color: var(--line-strong);
+}
+
+.key:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.key-fn {
+  font-family: var(--font-sans);
+  font-size: 19px;
+  color: var(--muted);
+}
+
+.key-fn svg {
+  width: 23px;
+  height: 23px;
+}
+
+.key-submit {
+  border-color: var(--teal-deep);
+  background: var(--teal);
+  color: #f5fffb;
+  box-shadow: 0 2px 0 var(--teal-deep);
+}
+
+.key-submit:hover {
+  border-color: var(--teal-deep);
+  background: #178477;
+}
+
+.key-submit:active {
+  box-shadow: none;
+}
+
+.key-submit svg {
+  width: 24px;
+  height: 24px;
+}
+
+.keypad.is-disabled {
+  opacity: 0.52;
+  pointer-events: none;
+}
+
+.correction {
+  position: relative;
+  width: 100%;
+  padding: 14px 15px 15px;
+  border: 1px solid #e7c3b7;
+  border-radius: 16px;
+  background: #fff7f2;
+  box-shadow: 0 12px 26px -24px rgba(184, 58, 44, 0.5);
+  overflow: hidden;
+}
+
+.correction-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.correction-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+#correct-answer {
+  display: block;
+  margin-top: 1px;
+  font-family: var(--font-mono);
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--danger);
+}
+
+.wrong-input {
+  margin-top: 3px;
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+.correction-q {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(184, 58, 44, 0.16);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.correction .btn {
+  min-height: 39px;
+  margin-top: 11px;
+  font-size: 12.5px;
+}
+
+.btn-quiet {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.btn-quiet:hover {
+  background: #fff;
+  border-color: var(--ink-soft);
+}
+
+.correction-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(184, 58, 44, 0.09);
+}
+
+.correction-bar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.correction-bar.run i {
+  animation: correctionTimer 3.2s linear forwards;
+}
+
+.game-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(33, 28, 22, 0.075);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0.42;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.streak.hot {
+  opacity: 1;
+  color: var(--accent-deep);
+}
+
+.streak-mark {
+  color: var(--accent);
+  font-size: 8px;
+  transform: translateY(-0.5px);
+}
+
+.streak b {
+  font-size: 11px;
+  color: currentColor;
+}
+
+.streak.bump b {
+  animation: scoreBump 0.35s ease;
+}
+
+.elapsed b {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+/* ---------- Result ---------- */
+
+.result {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: 34px 32px 64px;
+}
+
+.result-wrap {
+  width: 100%;
+}
+
+.result-head {
+  text-align: center;
+}
+
+.result-head .eyebrow {
+  justify-content: center;
+}
+
+.result-head h1 {
+  margin: 14px 0 12px;
+  font-size: clamp(34px, 5vw, 50px);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.055em;
+}
+
+.result-config {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.result-config span {
+  padding: 4px 9px;
+  border: 1px solid rgba(33, 28, 22, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.5);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.result-panel {
+  margin-top: 25px;
+  padding: 31px 33px 25px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+}
+
+.result-top {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr);
+  align-items: center;
+  gap: 34px;
+}
+
+.medal {
+  --acc: 0%;
+  --rank-color: var(--teal);
+  position: relative;
+  width: 190px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--rank-color) var(--acc), var(--ring-track) 0);
+}
+
+.medal::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px rgba(33, 28, 22, 0.055);
+}
+
+.medal-core {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.medal-label {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--muted-2);
+}
+
+.rank-letter {
+  display: block;
+  margin: 1px 0 1px;
+  font-family: var(--font-mono);
+  font-size: 73px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  color: var(--rank-color);
+}
+
+.medal-pct {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.medal[data-rank="S"] {
+  --rank-color: var(--gold);
+}
+
+.medal[data-rank="A"] {
+  --rank-color: var(--teal);
+}
+
+.medal[data-rank="B"] {
+  --rank-color: var(--blue);
+}
+
+.medal[data-rank="C"] {
+  --rank-color: #b06d1c;
+}
+
+.medal[data-rank="D"] {
+  --rank-color: var(--danger);
+}
+
+.score-block {
+  min-width: 0;
+}
+
+.score-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+.score-line {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 3px 0 5px;
+}
+
+.score-line strong {
+  font-family: var(--font-mono);
+  font-size: clamp(56px, 8vw, 76px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-line span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.new-best {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff8f2;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  animation: bestIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.new-best[hidden] {
+  display: none;
+}
+
+.score-note {
+  margin: 10px 0 0;
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 26px;
+  padding-top: 21px;
+  border-top: 1px solid var(--line);
+}
+
+.stat {
+  min-width: 0;
+}
+
+.stat span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+.stat b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.pattern-block {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(33, 28, 22, 0.12);
+}
+
+.pattern-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.pattern {
+  display: flex;
+  gap: 3px;
+  height: 11px;
+}
+
+.pattern i {
+  flex: 1 1 0;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.pattern i.ok {
+  background: var(--teal);
+}
+
+.pattern i.bad {
+  background: var(--accent);
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 17px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 11px;
+  background: rgba(255, 253, 248, 0.55);
+}
+
+.suggestion-mark {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.suggestion p {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.suggestion-btn {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.suggestion-btn:hover {
+  text-decoration: underline;
+}
+
+.result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin-top: 23px;
+}
+
+.btn-again {
+  width: auto;
+  min-width: 218px;
+  margin-top: 0;
+}
+
+.btn-outline {
+  min-width: 134px;
+  min-height: 56px;
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.btn-outline:hover {
+  border-color: var(--ink-soft);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.result-history-link {
+  display: flex;
+  width: fit-content;
+  margin: 18px auto 0;
+}
+
+.result-history-link span {
+  color: var(--accent);
+}
+
+.result-foot {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 9.5px;
+  color: var(--muted-2);
+}
+
+/* ---------- Dialogs ---------- */
+
+.dialog {
+  width: min(92vw, 650px);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 30px 80px -20px rgba(33, 28, 22, 0.45);
+  overflow: hidden;
+}
+
+.dialog::backdrop {
+  background: rgba(25, 21, 17, 0.54);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.dialog-sm {
+  width: min(92vw, 430px);
+}
+
+.dialog-inner {
+  max-height: min(84vh, 780px);
+  max-height: min(84dvh, 780px);
+  padding: 27px 28px 23px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dialog-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-head h2 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.dialog-close {
+  margin-top: -3px;
+  margin-right: -4px;
+  width: 34px;
+  height: 34px;
+  font-family: var(--font-sans);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dialog-sub {
+  flex: 0 0 auto;
+  margin: 7px 0 0;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.dialog-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.dialog-foot-right {
+  justify-content: flex-end;
+}
+
+.btn-sm {
+  min-height: 38px;
+  padding: 0 15px;
+  font-size: 12px;
+}
+
+.text-danger {
+  border: 0;
+  background: none;
+  padding: 6px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.text-danger:hover,
+.text-danger.armed {
+  color: var(--danger);
+}
+
+.text-danger.armed {
+  font-weight: 700;
+}
+
+.history-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 17px -6px 0;
+  padding: 0 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.record {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+
+.record-date b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.record-date span {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--muted);
+}
+
+.record-main {
+  min-width: 0;
+}
+
+.record-config {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.record-meta {
+  margin-top: 2px;
+  font-size: 8.5px;
+  color: var(--muted);
+}
+
+.record-result {
+  text-align: right;
+}
+
+.record-result b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--teal);
+}
+
+.record-result span {
+  display: block;
+  margin-top: 2px;
+  font-size: 8.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.history-empty {
+  margin: auto;
+  padding: 35px 15px;
+  text-align: center;
+}
+
+.empty-mark {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 13px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--muted-2);
+  transform: rotate(-4deg);
+}
+
+.history-empty b {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.history-empty p {
+  margin: 5px 0 0;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.help-content {
+  min-height: 0;
+  margin-top: 17px;
+  padding-right: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.help-lead {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.help-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 13px;
+}
+
+.help-steps li {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 0 10px;
+}
+
+.help-steps li::before {
+  content: counter(list-item, decimal-leading-zero);
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  width: 25px;
+  height: 25px;
+  border: 1px solid rgba(217, 72, 43, 0.26);
+  border-radius: 50%;
+  background: rgba(217, 72, 43, 0.06);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.help-steps b {
+  grid-column: 2;
+  grid-row: 1;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12.5px;
+}
+
+.help-steps span {
+  grid-column: 2;
+  grid-row: 2;
+  display: block;
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.help-example {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: var(--deep);
+  color: var(--deep-fg);
+}
+
+.help-example-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px dashed rgba(243, 238, 228, 0.1);
+}
+
+.help-example-row:last-child {
+  border-bottom: 0;
+}
+
+.help-example-row span {
+  font-size: 9px;
+  color: rgba(243, 238, 228, 0.5);
+}
+
+.help-example-row b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.help-example-row em {
+  font-style: normal;
+  font-size: 9px;
+  color: rgba(243, 238, 228, 0.5);
+}
+
+.help-example-row.current b {
+  color: #ff9a82;
+}
+
+.help-example-row.current em {
+  color: #ffb09e;
+  font-weight: 700;
+}
+
+.help-notes {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.help-notes p {
+  margin: 0 0 7px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.help-notes p:last-child {
+  margin-bottom: 0;
+}
+
+.help-notes b {
+  color: var(--ink-soft);
+}
+
+.quit-copy {
+  margin: 15px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.quit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.btn-danger {
+  min-height: 42px;
+  padding: 0 16px;
+  border-color: #8f2b20;
+  background: var(--danger);
+  color: #fff8f4;
+  font-size: 12.5px;
+  box-shadow: 0 3px 0 #7f251b;
+}
+
+.btn-danger:hover {
+  background: #c74435;
+  transform: translateY(-1px);
+}
+
+.btn-danger:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* ---------- Overlays ---------- */
+
+.countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(620px 420px at 50% 42%, rgba(217, 72, 43, 0.12), transparent 70%),
+    rgba(24, 20, 16, 0.92);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  color: var(--paper);
+  opacity: 1;
+  transition: opacity 0.24s ease;
+}
+
+.countdown[hidden] {
+  display: none;
+}
+
+.countdown.out {
+  opacity: 0;
+}
+
+.countdown-inner {
+  text-align: center;
+}
+
+.countdown-eyebrow {
+  justify-content: center;
+  color: rgba(243, 238, 228, 0.55);
+}
+
+.countdown-eyebrow .eyebrow-dot {
+  background: var(--accent);
+}
+
+.count-num {
+  margin: 8px 0 18px;
+  font-family: var(--font-mono);
+  font-size: clamp(102px, 18vw, 158px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  color: var(--paper);
+}
+
+.count-num.tick {
+  animation: countPop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.countdown p:last-child {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(243, 238, 228, 0.56);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 120;
+  max-width: calc(100vw - 32px);
+  padding: 9px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(33, 28, 22, 0.94);
+  color: var(--paper);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 12px 30px -15px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------- Animations ---------- */
+
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatCard {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -7px;
+  }
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes expressionIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes blinkCaret {
+  0%,
+  48% {
+    opacity: 1;
+  }
+  49%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes shakeBox {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes scoreBump {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes bestIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes countPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.78);
+    filter: blur(6px);
+  }
+  32% {
+    opacity: 1;
+    transform: scale(1.03);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes correctionTimer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 960px) {
+  .home-intro {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .hero-copy {
+    max-width: 700px;
+  }
+
+  .setup-panel {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .guide-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .home {
+    padding-top: 42px;
+  }
+
+  .panel {
+    padding: 27px 28px;
+  }
+}
+
+@media (max-width: 700px) {
+  .site-header {
+    padding: 15px 18px 0;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .brand-text strong {
+    font-size: 16px;
+  }
+
+  .brand-text small {
+    font-size: 7px;
+  }
+
+  .home {
+    padding: 32px 18px 30px;
+  }
+
+  .hero-copy h1 {
+    margin-top: 13px;
+    font-size: clamp(39px, 12vw, 54px);
+  }
+
+  .lede {
+    font-size: 13.5px;
+    line-height: 1.72;
+  }
+
+  .desktop-break {
+    display: none;
+  }
+
+  .hero-tags {
+    margin-top: 18px;
+  }
+
+  .memory-strip {
+    gap: 5px;
+    margin-top: 23px;
+  }
+
+  .strip-card {
+    min-height: 68px;
+    padding: 9px;
+  }
+
+  .strip-q {
+    font-size: 16px;
+  }
+
+  .strip-tag {
+    font-size: 8px;
+  }
+
+  .strip-arrow {
+    display: none;
+  }
+
+  .home-intro {
+    gap: 24px;
+  }
+
+  .setup-panel {
+    max-width: none;
+  }
+
+  .guide-panel {
+    margin-top: 18px;
+  }
+
+  .panel {
+    border-radius: 22px;
+    padding: 22px 19px;
+  }
+
+  .panel h2 {
+    font-size: 21px;
+  }
+
+  .field {
+    margin-top: 20px;
+  }
+
+  .field + .field {
+    padding-top: 18px;
+  }
+
+  .field-hint {
+    font-size: 10px;
+  }
+
+  .pill {
+    min-height: 50px;
+  }
+
+  .pill b {
+    font-size: 17px;
+  }
+
+  .choice {
+    min-height: 64px;
+    padding-left: 11px;
+  }
+
+  .choice-title {
+    font-size: 13px;
+  }
+
+  .choice-sub {
+    font-size: 8.8px;
+  }
+
+  .choice-check {
+    right: 9px;
+    width: 17px;
+    height: 17px;
+  }
+
+  .btn-start {
+    margin-top: 22px;
+  }
+
+  .site-foot {
+    margin-top: 24px;
+    font-size: 9px;
+    line-height: 1.7;
+    text-align: center;
+  }
+
+  .result {
+    padding: 26px 18px 45px;
+  }
+
+  .result-panel {
+    border-radius: 22px;
+    padding: 24px 19px 20px;
+  }
+
+  .result-top {
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .medal {
+    width: 150px;
+  }
+
+  .rank-letter {
+    font-size: 58px;
+  }
+
+  .score-line strong {
+    font-size: clamp(48px, 13vw, 62px);
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px 12px;
+  }
+
+  .suggestion {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .suggestion p {
+    flex-basis: calc(100% - 30px);
+  }
+
+  .suggestion-btn {
+    margin-left: 27px;
+  }
+
+  .result-actions {
+    flex-direction: column;
+  }
+
+  .btn-again,
+  .btn-outline {
+    width: 100%;
+  }
+
+  .dialog-inner {
+    padding: 22px 19px 19px;
+  }
+
+  .dialog-head h2 {
+    font-size: 23px;
+  }
+
+  .record {
+    grid-template-columns: 62px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 9px 10px;
+  }
+
+  .record-result b {
+    font-size: 14px;
+  }
+
+  .record-date b {
+    font-size: 9.5px;
+  }
+
+  .record-date span {
+    font-size: 8px;
+  }
+
+  .record-config {
+    font-size: 9.5px;
+  }
+
+  .help-example-row {
+    grid-template-columns: 78px minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .game-shell {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+@media (max-width: 470px) {
+  .header-actions {
+    gap: 1px;
+  }
+
+  .lang-btn {
+    height: 38px;
+    padding: 0 7px;
+  }
+
+  .lang-btn span {
+    min-width: 20px;
+    height: 22px;
+    padding: 0 3px;
+  }
+
+  .text-btn {
+    padding: 9px 7px;
+    font-size: 11px;
+  }
+
+  .text-btn svg {
+    display: none;
+  }
+
+  #help-btn {
+    display: none;
+  }
+
+  .brand-text small {
+    display: none;
+  }
+
+  .brand-text strong {
+    font-size: 15.5px;
+  }
+
+  .hero-tags span {
+    padding: 4px 8px;
+    font-size: 9.5px;
+  }
+
+  .field-head {
+    margin-bottom: 9px;
+  }
+
+  .field-hint {
+    display: none;
+  }
+
+  .game-config {
+    font-size: 8.5px;
+  }
+
+  .game-bar {
+    height: 34px;
+  }
+
+  .answer-box {
+    min-height: 68px;
+  }
+
+  .expression-sub {
+    font-size: 10.5px;
+  }
+}
+
+@media (max-height: 740px) {
+  .game-shell {
+    --key-h: clamp(42px, 6.4vh, 50px);
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(9px, env(safe-area-inset-bottom));
+  }
+
+  .game-bar {
+    height: 32px;
+  }
+
+  .progress-block {
+    margin-top: 12px;
+  }
+
+  .play {
+    padding: 3px 0;
+  }
+
+  .expression-wrap {
+    margin: 11px 0 10px;
+  }
+
+  .expression {
+    font-size: clamp(44px, 9.8vh, 64px);
+  }
+
+  .expression-sub {
+    margin-top: 6px;
+  }
+
+  .answer-box {
+    min-height: 60px;
+  }
+
+  .answer-value {
+    font-size: 34px;
+  }
+
+  .caret {
+    height: 27px;
+  }
+
+  .feedback-line {
+    margin-top: 5px;
+    min-height: 18px;
+  }
+
+  .interaction {
+    margin-top: 8px;
+    min-height: calc(var(--key-h) * 4 + 24px);
+  }
+
+  .memory-dots {
+    margin-bottom: 12px;
+  }
+
+  .warm-hint {
+    margin-top: 8px;
+  }
+
+  .game-foot {
+    padding-top: 6px;
+  }
+
+  .state-chip {
+    padding: 5px 10px;
+    font-size: 10.5px;
+  }
+}
+
+@media (max-height: 590px) {
+  .game {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .game-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .game-foot {
+    display: none;
+  }
+
+  .expression {
+    font-size: 42px;
+  }
+
+  .expression-wrap {
+    margin: 7px 0 8px;
+  }
+
+  .answer-box {
+    min-height: 54px;
+  }
+
+  .answer-value {
+    font-size: 30px;
+  }
+
+  .feedback-line {
+    min-height: 16px;
+    margin-top: 4px;
+  }
+
+  .interaction {
+    margin-top: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (hover: none) {
+  .pill:hover,
+  .choice:hover,
+  .btn-start:hover,
+  .key:hover,
+  .icon-btn:hover,
+  .inline-link:hover span {
+    transform: none;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid rgba(217, 72, 43, 0.38);
+  outline-offset: 2px;
+}
+
+#home-title:focus,
+#result-title:focus,
+#game-title:focus {
+  outline: none;
+}
+
+/* Utility states */
+.icon-btn svg[hidden] {
+  display: none;
+}
+
+.key:disabled {
+  cursor: default;
+}
+
+.text-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.record-result b.low {
+  color: var(--accent);
+}
+
+.help-steps {
+  counter-reset: help-step;
+}
+
+.help-steps li {
+  counter-increment: help-step;
+}
+
+.help-steps li::before {
+  content: counter(help-step, decimal-leading-zero);
+}
+
+/* ---------- Dark theme ---------- */
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] .ambient {
+  background:
+    radial-gradient(760px 520px at 88% -4%, rgba(255, 107, 74, 0.08), transparent 68%),
+    radial-gradient(640px 560px at -6% 20%, rgba(45, 212, 191, 0.05), transparent 70%),
+    radial-gradient(720px 520px at 50% 110%, rgba(96, 165, 250, 0.05), transparent 70%);
+}
+
+html[data-theme="dark"] .ambient::before {
+  background-image:
+    linear-gradient(rgba(249, 250, 251, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 250, 251, 0.035) 1px, transparent 1px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.55) 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.55) 58%, transparent 100%);
+}
+
+html[data-theme="dark"] .ambient::after {
+  -webkit-text-stroke-color: rgba(249, 250, 251, 0.055);
+}
+
+html[data-theme="dark"] .icon-btn {
+  background: rgba(31, 41, 55, 0.8);
+}
+
+html[data-theme="dark"] .icon-btn:hover {
+  background: var(--surface);
+}
+
+html[data-theme="dark"] .text-btn:hover,
+html[data-theme="dark"] .ghost-btn:hover {
+  background: rgba(249, 250, 251, 0.06);
+}
+
+html[data-theme="dark"] .mode-tab:hover {
+  background: rgba(249, 250, 251, 0.05);
+}
+
+html[data-theme="dark"] .mode-tab[aria-checked="true"] {
+  background: var(--surface);
+  box-shadow: 0 2px 8px -5px rgba(0, 0, 0, 0.8);
+}
+
+html[data-theme="dark"] .pill:not([aria-checked="true"]),
+html[data-theme="dark"] .choice:not([aria-checked="true"]) {
+  background: var(--surface);
+}
+
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .result-panel {
+  background: rgba(31, 41, 55, 0.88);
+}
+
+html[data-theme="dark"] .memory-strip .strip-card {
+  background: rgba(31, 41, 55, 0.72);
+}
+
+html[data-theme="dark"] .hero-tags span {
+  background: rgba(31, 41, 55, 0.55);
+  border-color: rgba(249, 250, 251, 0.12);
+}
+
+html[data-theme="dark"] .round-badge {
+  border-color: rgba(249, 250, 251, 0.12);
+}
+
+html[data-theme="dark"] .field + .field {
+  border-top-color: rgba(249, 250, 251, 0.08);
+}
+
+html[data-theme="dark"] .pill[aria-checked="true"] span,
+html[data-theme="dark"] .choice[aria-checked="true"] .choice-sub {
+  color: rgba(17, 24, 39, 0.62);
+}
+
+html[data-theme="dark"] .btn-accent,
+html[data-theme="dark"] .btn-accent:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+html[data-theme="dark"] .btn-accent:hover {
+  background: #f9fafb;
+}
+
+html[data-theme="dark"] .answer-box {
+  box-shadow: 0 12px 24px -22px rgba(0, 0, 0, 0.9);
+}
+
+html[data-theme="dark"] .answer-box.is-wrong {
+  background: #3b1f2a;
+}
+
+html[data-theme="dark"] .key {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="dark"] .key:hover {
+  background: var(--surface-strong);
+}
+
+html[data-theme="dark"] .key-submit {
+  border-color: var(--teal-deep);
+  background: var(--teal);
+  color: #062a25;
+}
+
+html[data-theme="dark"] .key-submit:hover {
+  background: #5eead4;
+}
+
+html[data-theme="dark"] .correction {
+  border-color: #5f2735;
+  background: #2b1b24;
+  box-shadow: 0 12px 26px -24px rgba(0, 0, 0, 0.8);
+}
+
+html[data-theme="dark"] .correction-q {
+  border-top-color: rgba(255, 111, 93, 0.18);
+}
+
+html[data-theme="dark"] .state-chip {
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .state-chip[data-mode="answer"] {
+  color: var(--teal);
+}
+
+html[data-theme="dark"] .endless-hud-label {
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .game-foot {
+  border-top-color: rgba(249, 250, 251, 0.08);
+}
+
+html[data-theme="dark"] .result-config span {
+  background: rgba(31, 41, 55, 0.65);
+  border-color: rgba(249, 250, 251, 0.12);
+}
+
+html[data-theme="dark"] .pattern-block {
+  border-top-color: rgba(249, 250, 251, 0.12);
+}
+
+html[data-theme="dark"] .suggestion {
+  background: rgba(31, 41, 55, 0.65);
+}
+
+html[data-theme="dark"] .new-best {
+  color: #2a0d07;
+}
+
+html[data-theme="dark"] .btn-danger {
+  color: #2a0d07;
+  box-shadow: 0 3px 0 #8f2b20;
+}
+
+html[data-theme="dark"] #screen-game[data-mode="endless"] .key.is-correct {
+  color: #062a25;
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.15);
+}
+
+html[data-theme="dark"] #screen-game[data-mode="endless"] .key.is-wrong {
+  color: #2b0c07;
+  box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.15);
+}
+
+html[data-theme="dark"] .btn-outline:hover {
+  background: var(--surface-strong);
+}
+
+html[data-theme="dark"] .btn-quiet:hover {
+  background: var(--surface-strong);
+}
+
+html[data-theme="dark"] .toast {
+  border-color: rgba(17, 24, 39, 0.2);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+html[data-theme="dark"] .example,
+html[data-theme="dark"] .help-example,
+html[data-theme="dark"] .strip-card-now {
+  background: var(--deep);
+  color: var(--deep-fg);
+}
+
+html[data-theme="dark"] .medal {
+  background: conic-gradient(var(--rank-color) var(--acc), var(--ring-track) 0);
+}
+
+html[data-theme="dark"] .seg:not(.done):not(.wrong):not(.current) {
+  background: var(--track);
+}
+
+html[data-theme="dark"] .pattern i:not(.ok):not(.bad) {
+  background: var(--track);
+}
+
+html[data-theme="dark"] ::selection {
+  background: rgba(255, 107, 74, 0.28);
+}
+
+@media (max-width: 700px) {
+  .mode-tab {
+    min-height: 45px;
+    padding: 7px 9px;
+  }
+
+  .mode-tab span {
+    font-size: 11.5px;
+  }
+
+  .mode-tab small {
+    font-size: 7.5px;
+  }
+}
+
+@media (max-width: 470px) {
+  .endless-hud {
+    margin-top: 13px;
+  }
+
+  .endless-hud-stats {
+    gap: 11px;
+  }
+}
+
+@media (max-height: 740px) {
+  .endless-hud {
+    margin-top: 10px;
+    padding: 6px 0 7px;
+  }
+
+  #screen-game[data-mode="endless"] .feedback-line {
+    min-height: 22px;
+    font-size: 12px;
+  }
+}
+
+html[data-theme="dark"] .streak.hot {
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .btn-start {
+  color: #2b0c07;
+}
+
+html[data-theme="dark"] .btn-start:hover {
+  color: #2b0c07;
+}
+
+#endless-score {
+  display: inline-block;
+}
+
+#endless-score.bump {
+  animation: scoreBump 0.45s ease;
+}
+
+
+html[data-theme="dark"] .medal[data-rank="C"] {
+  --rank-color: #e0a45a;
+}
+
+.mode-tab {
+  position: relative;
+}
+
+.mode-tab[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.endless-hud-stats {
+  font-size: 10px;
+}
+
+.endless-hud-stats b {
+  font-size: 13px;
+}
+
+.endless-hud-label {
+  font-size: 10px;
+}
+
+.streak {
+  opacity: 0.5;
+}
+
+html[data-theme="dark"] .streak {
+  opacity: 0.65;
+}
+
+html[data-theme="dark"] .streak.hot {
+  opacity: 1;
+}
+
+.endless-hud-stats {
+  font-size: 10.5px;
+}
+
+.endless-hud-stats b {
+  font-size: 14px;
+}
+
+.streak {
+  opacity: 0.6;
+}
+
+html[data-theme="dark"] .endless-hud-stats {
+  color: var(--ink-soft);
+}
+
+html[data-theme="dark"] .streak {
+  opacity: 0.8;
+  color: var(--ink-soft);
+}
+
+html[data-theme="dark"] .streak.hot {
+  opacity: 1;
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .dialog {
+  background: var(--surface-soft);
+}
+
+html[data-theme="dark"] .countdown {
+  background:
+    radial-gradient(620px 420px at 50% 42%, rgba(255, 107, 74, 0.08), transparent 70%),
+    rgba(17, 24, 39, 0.94);
+}
+
+html[data-theme="dark"] .key {
+  border-color: var(--surface-strong);
+}
+
+html[data-lang="en"] .hero-copy h1 {
+  font-size: clamp(42px, 5.2vw, 66px);
+  letter-spacing: -0.045em;
+}
+
+@media (max-width: 470px) {
+  html[data-lang="en"] .brand-text strong {
+    font-size: 13.5px;
+  }
+
+  html[data-lang="en"] .hero-copy h1 {
+    font-size: clamp(34px, 9.4vw, 42px);
+  }
+}
+
+</style>
+</head>
+<body data-screen="home">
+  <div class="ambient" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" id="brand-link" href="#" aria-label="返回首页" data-i18n-aria="brand_home_aria">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M5 19V5h2.5L16 15.5V5h3v14h-2.5L8 8.5V19H5Z" fill="currentColor"/>
+          <circle cx="19.5" cy="4.5" r="2.3" fill="#d9482b"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong data-i18n="brand">魔鬼计算</strong>
+        <small>N-BACK TRAINER</small>
+      </span>
+    </a>
+    <div class="header-actions">
+      <button id="lang-btn" class="lang-btn" type="button" aria-label="切换到英文" title="切换到英文">
+        <span class="lang-zh" aria-hidden="true">中</span>
+        <span class="lang-en" aria-hidden="true">EN</span>
+      </button>
+      <button id="theme-btn" class="icon-btn" type="button" aria-label="切换到深色主题" title="切换到深色主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7Z"/>
+        </svg>
+      </button>
+      <button id="history-btn" class="text-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/>
+          <path d="M3 3v5h5"/>
+          <path d="M12 7v5l3 2"/>
+        </svg>
+        <span data-i18n="nav_log">记录</span>
+      </button>
+      <button id="help-btn" class="text-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M9.3 9a2.8 2.8 0 1 1 4.1 2.5c-.9.5-1.4 1-1.4 2.1"/>
+          <path d="M12 17.2h.01"/>
+        </svg>
+        <span data-i18n="nav_help">怎么玩</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section id="screen-home" class="screen home" aria-labelledby="home-title">
+      <div class="home-intro">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-dot"></span><span data-i18n="hero_eyebrow">WORKING MEMORY · 心算训练</span></p>
+          <h1 id="home-title" data-i18n-html="hero_title_html">记住 N 题前，<br><em>而不是眼前。</em></h1>
+          <p class="lede" data-i18n-html="hero_lede_html">一边计算新题，一边回溯旧答案。当前算式只是干扰项，<br class="desktop-break">真正要输的是 N 题之前那道题的答案。</p>
+          <div class="hero-tags">
+            <span data-i18n-html="tag_round_html"><b>25</b> 题 / 局</span>
+            <span data-i18n-html="tag_back_html"><b>1–5</b> 回溯</span>
+            <span data-i18n-html="tag_ops_html"><b>4</b> 种运算</span>
+            <span data-i18n-html="tag_endless_html"><b>∞</b> 无尽 0–9</span>
+            <span data-i18n-html="tag_offline_html"><b>0</b> 联网</span>
+          </div>
+
+          <div class="memory-strip" aria-hidden="true">
+            <div class="strip-card">
+              <span class="strip-q">3 + 4</span>
+              <span class="strip-tag" data-i18n="strip_q1">第 1 题 · 记住 7</span>
+            </div>
+            <span class="strip-arrow">→</span>
+            <div class="strip-card">
+              <span class="strip-q">9 − 5</span>
+              <span class="strip-tag" data-i18n="strip_q2">第 2 题 · 记住 4</span>
+            </div>
+            <span class="strip-arrow">→</span>
+            <div class="strip-card strip-card-now">
+              <span class="strip-q">6 × 3</span>
+              <span class="strip-tag" data-i18n-html="strip_a1_html">回答第 1 题 <b>7</b></span>
+            </div>
+          </div>
+        </div>
+
+        <section class="panel setup-panel" aria-labelledby="setup-title">
+          <div class="panel-head">
+            <div>
+              <p class="kicker">SETUP</p>
+              <h2 id="setup-title" data-i18n="setup_title">设置这一局</h2>
+            </div>
+            <span class="round-badge" id="round-badge">25 题 / 局</span>
+          </div>
+
+          <div class="mode-switch" id="mode-group" role="radiogroup" aria-label="训练模式" data-i18n-aria="mode_aria">
+            <button class="mode-tab" type="button" data-mode="normal" role="radio" aria-checked="true">
+              <span data-i18n="mode_normal">25 题训练</span>
+              <small data-i18n="mode_normal_sub">有始有终</small>
+            </button>
+            <button class="mode-tab" type="button" data-mode="endless" role="radio" aria-checked="false">
+              <span data-i18n="mode_endless">无尽 · 0–9</span>
+              <small data-i18n="mode_endless_sub">点数字即答</small>
+            </button>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <div class="field-title"><span class="field-index">01</span><span data-i18n="field_back">回溯层数</span></div>
+              <span class="field-hint" id="n-hint">回答上一题的答案</span>
+            </div>
+            <div class="pill-group" id="n-group" data-setting="n" role="radiogroup" aria-label="回溯层数" data-i18n-aria="n_aria">
+              <button class="pill" type="button" data-value="1" role="radio" aria-checked="true"><b>1</b><span data-i18n="back_short">回溯</span></button>
+              <button class="pill" type="button" data-value="2" role="radio" aria-checked="false"><b>2</b><span data-i18n="back_short">回溯</span></button>
+              <button class="pill" type="button" data-value="3" role="radio" aria-checked="false"><b>3</b><span data-i18n="back_short">回溯</span></button>
+              <button class="pill" type="button" data-value="4" role="radio" aria-checked="false"><b>4</b><span data-i18n="back_short">回溯</span></button>
+              <button class="pill" type="button" data-value="5" role="radio" aria-checked="false"><b>5</b><span data-i18n="back_short">回溯</span></button>
+            </div>
+          </div>
+
+          <div class="field" id="digits-field">
+            <div class="field-head">
+              <div class="field-title"><span class="field-index">02</span><span data-i18n="field_digits">数字范围</span></div>
+              <span class="field-hint" data-i18n="hint_digits">决定心算的强度</span>
+            </div>
+            <div class="choice-group" id="digits-group" data-setting="digits" role="radiogroup" aria-label="数字范围" data-i18n-aria="digits_aria">
+              <button class="choice" type="button" data-value="1" role="radio" aria-checked="true">
+                <span class="choice-title" data-i18n="digits_1">个位数</span>
+                <span class="choice-sub" data-i18n="digits_1_sub">一位数 + − × ÷，表内乘除</span>
+                <span class="choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button class="choice" type="button" data-value="2" role="radio" aria-checked="false">
+                <span class="choice-title" data-i18n="digits_2">两位数</span>
+                <span class="choice-sub" data-i18n="digits_2_sub">两位加减 · 两位 ×/÷ 一位</span>
+                <span class="choice-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field endless-info" id="endless-info" hidden>
+            <div class="field-head">
+              <div class="field-title"><span class="field-index">02</span><span data-i18n="field_endless">无尽规则</span></div>
+              <span class="field-hint" data-i18n="hint_endless">答案锁定 0–9</span>
+            </div>
+            <p class="endless-info-text" data-i18n="endless_info">所有结果都在 0–9 之间。答题时直接点数字，立即提交；没有确认，也没有删除。数字范围设置不会影响本关。</p>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <div class="field-title"><span class="field-index">03</span><span data-i18n="field_ops">运算类型</span></div>
+              <span class="field-hint" data-i18n="hint_ops">加减，或四则混合</span>
+            </div>
+            <div class="choice-group" id="ops-group" data-setting="ops" role="radiogroup" aria-label="运算类型" data-i18n-aria="ops_aria">
+              <button class="choice" type="button" data-value="addsub" role="radio" aria-checked="true">
+                <span class="choice-title" data-i18n="ops_addsub">加减</span>
+                <span class="choice-sub" data-i18n="ops_addsub_sub">只出现 + 和 −</span>
+                <span class="choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button class="choice" type="button" data-value="all" role="radio" aria-checked="false">
+                <span class="choice-title" data-i18n="ops_all">加减乘除</span>
+                <span class="choice-sub" data-i18n="ops_all_sub">四则混合，除法保证整除</span>
+                <span class="choice-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <button id="start-btn" class="btn btn-start" type="button">
+            <span id="start-label">开始训练</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14"/>
+              <path d="m13 6 6 6-6 6"/>
+            </svg>
+          </button>
+          <div class="setup-foot">
+            <span id="best-note">当前设置还没有记录</span>
+            <span class="foot-sep" aria-hidden="true">·</span>
+            <span id="setup-note">不限时 · 按自己的节奏</span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="panel guide-panel" aria-labelledby="guide-title">
+        <div class="guide-grid">
+          <div class="guide-copy">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">HOW IT WORKS</p>
+                <h2 id="guide-title" data-i18n="guide_title">别答眼前这道题</h2>
+              </div>
+              <span class="guide-mark" aria-hidden="true">N</span>
+            </div>
+            <ol class="steps">
+              <li>
+                <span class="step-num" aria-hidden="true">01</span>
+                <div>
+                  <b data-i18n="guide_step1_title">先算，再记</b>
+                  <p data-i18n="guide_step1_text">每题出现时，先算出答案，把它放进脑子里的记忆队列。</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-num" aria-hidden="true">02</span>
+                <div>
+                  <b data-i18n="guide_step2_title">回头看 N 题</b>
+                  <p data-i18n="guide_step2_text">从第 N+1 题起，输入的是 N 题前那道题的答案。当前题只是新的记忆材料。</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-num" aria-hidden="true">03</span>
+                <div>
+                  <b data-i18n="guide_step3_title">连续训练</b>
+                  <p data-i18n="guide_step3_text">普通局 25 题；无尽关一直答到你想停。答错不中断，会显示旧题的正确答案。</p>
+                </div>
+              </li>
+            </ol>
+            <p class="fineprint" data-i18n="guide_fineprint">减法不会出现负数，除法保证整除。两位数模式下，加减为两位 ± 两位，乘除为两位 ×/÷ 一位。无尽关所有答案固定为 0–9。</p>
+            <button id="guide-help-btn" class="inline-link" type="button"><span data-i18n="guide_more">查看完整玩法</span> <span aria-hidden="true">→</span></button>
+          </div>
+
+          <div class="example" aria-label="2-回溯示例" data-i18n-aria="example_aria">
+            <div class="example-head"><span data-i18n="example_back">2-回溯示例</span><span data-i18n="example_now">当前是第 3 题</span></div>
+            <div class="example-row"><span class="ex-q">3 + 4</span><span class="ex-tag" data-i18n="example_q1">第 1 题 · 记住 7</span></div>
+            <div class="example-row"><span class="ex-q">9 − 5</span><span class="ex-tag" data-i18n="example_q2">第 2 题 · 记住 4</span></div>
+            <div class="example-row ex-now"><span class="ex-q">6 × 3</span><span class="ex-tag" data-i18n="example_q3">第 3 题 · 别答 18</span></div>
+            <div class="example-answer"><span data-i18n="example_answer_label">你要回答</span><strong>7</strong><span data-i18n="example_answer_note">第 1 题的答案</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <footer class="site-foot">
+        <span data-i18n="footer_code">所有代码和数据都在这个网页里</span>
+        <span aria-hidden="true">·</span>
+        <span data-i18n="footer_offline">无需联网</span>
+        <span aria-hidden="true">·</span>
+        <span data-i18n="footer_records">记录仅保存在本机浏览器</span>
+      </footer>
+    </section>
+
+    <section id="screen-game" class="screen game" data-mode="normal" hidden aria-labelledby="game-title">
+      <h2 id="game-title" class="sr-only" data-i18n="game_title_sr">魔鬼计算训练中</h2>
+      <div class="game-shell">
+        <header class="game-bar">
+          <button id="quit-btn" class="ghost-btn" type="button"><span aria-hidden="true">←</span> <span id="quit-label">退出</span></button>
+          <div class="game-config" id="game-config">1-回溯 · 个位数 · 加减</div>
+          <button id="game-theme-btn" class="icon-btn icon-btn-sm" type="button" aria-label="切换到深色主题" title="切换到深色主题">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7Z"/>
+            </svg>
+          </button>
+        </header>
+
+        <div class="progress-block" id="progress-block">
+          <div class="progress-line"><span id="progress-text">已答 0 / 25</span><span id="score-text">0 分</span></div>
+          <div class="segments" id="segments" aria-hidden="true"></div>
+        </div>
+
+        <div class="endless-hud" id="endless-hud" hidden>
+          <span class="endless-hud-label"><span class="live-dot" aria-hidden="true"></span><span data-i18n="game_hud_label">无尽 · 0–9</span></span>
+          <span class="endless-hud-stats"><span><span data-i18n="hud_answered">已答</span> <b id="endless-answered">0</b></span><span><span data-i18n="hud_score">得分</span> <b id="endless-score">0</b></span></span>
+        </div>
+
+        <div class="play">
+          <div class="play-inner">
+            <div class="state-row">
+              <span class="state-chip" id="state-chip" data-mode="warm" aria-live="polite" aria-atomic="true"><span class="state-dot"></span><span id="state-label">记忆热身 1 / 1</span></span>
+            </div>
+            <div class="expression-wrap">
+              <div class="expression" id="expression" aria-live="polite" aria-atomic="true">· · ·</div>
+              <p class="expression-sub" id="expression-sub">先算出答案，记在心里</p>
+            </div>
+            <div class="answer-zone">
+              <div class="answer-label" id="answer-label">把答案记在心里</div>
+              <div class="answer-box" id="answer-box" data-empty="true" aria-live="polite" aria-atomic="true">
+                <span class="answer-value" id="answer-value">?</span><span class="caret" id="caret" aria-hidden="true"></span>
+              </div>
+              <div class="feedback-line" id="feedback-line" aria-live="polite"></div>
+            </div>
+
+            <div class="interaction" id="interaction">
+              <div class="warm-actions" id="warm-actions">
+                <div class="memory-dots" id="memory-dots" aria-hidden="true"></div>
+                <button id="memorize-btn" class="btn btn-accent btn-wide" type="button">记住了，下一题 <span aria-hidden="true">→</span></button>
+                <p class="warm-hint" data-i18n="game_warm_hint">答案不会显示，请自己计算</p>
+              </div>
+
+              <div class="keypad" id="keypad" hidden>
+                <button class="key" type="button" data-digit="1" aria-label="数字 1">1</button>
+                <button class="key" type="button" data-digit="2" aria-label="数字 2">2</button>
+                <button class="key" type="button" data-digit="3" aria-label="数字 3">3</button>
+                <button class="key" type="button" data-digit="4" aria-label="数字 4">4</button>
+                <button class="key" type="button" data-digit="5" aria-label="数字 5">5</button>
+                <button class="key" type="button" data-digit="6" aria-label="数字 6">6</button>
+                <button class="key" type="button" data-digit="7" aria-label="数字 7">7</button>
+                <button class="key" type="button" data-digit="8" aria-label="数字 8">8</button>
+                <button class="key" type="button" data-digit="9" aria-label="数字 9">9</button>
+                <button class="key key-fn" type="button" id="backspace-btn" aria-label="删除一位" data-i18n-aria="game_backspace_aria">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 6H9l-5 6 5 6h11V6Z"/>
+                    <path d="m13 10 4 4"/>
+                    <path d="m17 10-4 4"/>
+                  </svg>
+                </button>
+                <button class="key" type="button" data-digit="0" aria-label="数字 0">0</button>
+                <button class="key key-submit" type="button" id="submit-btn" aria-label="提交答案" data-i18n-aria="game_submit_aria">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m5 12.5 4.2 4.2L19 7"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="correction" id="correction" hidden>
+                <div class="correction-top">
+                  <div>
+                    <span class="correction-label" data-i18n="game_correction">正确答案</span>
+                    <strong id="correct-answer">15</strong>
+                  </div>
+                  <span class="wrong-input" id="wrong-input">你输入了 12</span>
+                </div>
+                <div class="correction-q" id="correct-question">7 + 8 = 15</div>
+                <button id="continue-btn" class="btn btn-quiet btn-wide" type="button"><span data-i18n="game_continue">继续</span> <span aria-hidden="true">→</span></button>
+                <div class="correction-bar" id="correction-bar" aria-hidden="true"><i></i></div>
+              </div>
+
+
+            </div>
+          </div>
+        </div>
+
+        <footer class="game-foot">
+          <div class="streak" id="streak-wrap"><span class="streak-mark" aria-hidden="true">◆</span> <span data-i18n="game_streak">连击</span> <b id="streak">0</b></div>
+          <div class="elapsed"><span data-i18n="game_time">用时</span> <b id="elapsed">00:00</b></div>
+        </footer>
+      </div>
+    </section>
+
+    <section id="screen-result" class="screen result" hidden aria-labelledby="result-title">
+      <div class="result-wrap">
+        <header class="result-head">
+          <p class="eyebrow"><span class="eyebrow-dot"></span><span id="result-eyebrow-text">ROUND COMPLETE · 本局完成</span></p>
+          <h1 id="result-title">稳得很。</h1>
+          <div class="result-config" id="result-config"></div>
+        </header>
+
+        <section class="result-panel" aria-label="本局成绩" data-i18n-aria="result_panel_aria">
+          <div class="result-top">
+            <div class="medal" id="medal" data-rank="A" style="--acc: 0%">
+              <div class="medal-core">
+                <span class="medal-label">RANK</span>
+                <strong class="rank-letter" id="rank-letter">A</strong>
+                <span class="medal-pct" id="accuracy-value">0%</span>
+              </div>
+            </div>
+            <div class="score-block">
+              <span class="score-label" data-i18n="result_score_label">总得分</span>
+              <div class="score-line"><strong id="score-value">0</strong><span data-i18n="result_points">分</span></div>
+              <span class="new-best" id="new-best" hidden data-i18n="result_new_best">NEW BEST · 新纪录</span>
+              <p class="score-note" id="score-note">答对一题 100 分，满分 2500 分。</p>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat"><span data-i18n="result_stat_correct">答对</span><b id="stat-correct">0 / 25</b></div>
+            <div class="stat"><span data-i18n="result_stat_streak">最长连击</span><b id="stat-streak">0</b></div>
+            <div class="stat"><span data-i18n="result_stat_avg">平均每题</span><b id="stat-avg">—</b></div>
+            <div class="stat"><span data-i18n="result_stat_time">总用时</span><b id="stat-time">00:00</b></div>
+          </div>
+
+          <div class="pattern-block">
+            <div class="pattern-head"><span data-i18n="result_pattern">答题轨迹</span><span id="pattern-legend">绿=答对 · 红=答错</span></div>
+            <div class="pattern" id="result-pattern" role="img" aria-label="本局答题轨迹"></div>
+          </div>
+        </section>
+
+        <div class="suggestion" id="suggestion">
+          <span class="suggestion-mark" aria-hidden="true">✦</span>
+          <p id="suggestion-text">保持这个节奏，再来一局。</p>
+          <button id="suggestion-action" class="suggestion-btn" type="button" hidden>试试更高难度 →</button>
+        </div>
+
+        <div class="result-actions">
+          <button id="play-again-btn" class="btn btn-start btn-again" type="button"><span id="play-again-label">再来一局</span></button>
+          <button id="adjust-btn" class="btn btn-outline" type="button" data-i18n="result_adjust">调整设置</button>
+        </div>
+        <button id="result-history-btn" class="inline-link result-history-link" type="button"><span data-i18n="result_history">查看训练记录</span> <span aria-hidden="true">→</span></button>
+        <p class="result-foot" id="result-foot">同一设置下，正确率相同则平均用时更短者刷新纪录。</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="history-dialog" class="dialog" aria-labelledby="history-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><p class="kicker">HISTORY</p><h2 id="history-title" data-i18n="history_title">训练记录</h2></div>
+        <button class="icon-btn dialog-close" type="button" data-close aria-label="关闭" data-i18n-aria="close_aria">×</button>
+      </header>
+      <p class="dialog-sub" id="history-sub">只保存在当前浏览器</p>
+      <div class="history-list" id="history-list"></div>
+      <footer class="dialog-foot">
+        <button id="clear-history" class="text-danger" type="button" data-i18n="history_clear">清空记录</button>
+        <button class="btn btn-quiet btn-sm" type="button" data-close data-i18n="history_close">关闭</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog id="help-dialog" class="dialog" aria-labelledby="help-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><p class="kicker">RULES</p><h2 id="help-title" data-i18n="help_title">怎么玩</h2></div>
+        <button class="icon-btn dialog-close" type="button" data-close aria-label="关闭" data-i18n-aria="close_aria">×</button>
+      </header>
+      <div class="help-content">
+        <p class="help-lead" data-i18n="help_lead">一句话：一边计算当前题目，一边填写前 N 题的答案。</p>
+        <ol class="help-steps">
+          <li><b data-i18n="help_step1_title">先记住 N 题</b><span data-i18n="help_step1_text">开局会有 N 道热身题。每题出现时，先算出答案，记在脑子里，然后点「记住了」。</span></li>
+          <li><b data-i18n="help_step2_title">开始回溯</b><span data-i18n="help_step2_text">从第 N+1 题起，要回答的是 N 题前那道题的答案。当前题只需要继续计算并记住，不要回答它的答案。</span></li>
+          <li><b data-i18n="help_step3_title">连续训练</b><span data-i18n="help_step3_text">普通局 25 题；无尽关一直答到你想停。答错不中断，会显示旧题的正确答案。</span></li>
+        </ol>
+        <div class="help-example">
+          <div class="help-example-row"><span data-i18n="help_example_1">2-回溯 · 第 1 题</span><b>3 + 4 = 7</b><em data-i18n="help_remember">记住</em></div>
+          <div class="help-example-row"><span data-i18n="help_example_2">第 2 题</span><b>9 − 5 = 4</b><em data-i18n="help_remember">记住</em></div>
+          <div class="help-example-row current"><span data-i18n="help_example_3">第 3 题出现时</span><b>6 × 3 = 18</b><em data-i18n="help_answer">回答 7</em></div>
+        </div>
+        <div class="help-notes">
+          <p data-i18n-html="help_note_time_html"><b>计时：</b>不限时，按自己的节奏。总用时和平均每题时间会记录在成绩里。</p>
+          <p data-i18n-html="help_note_gen_html"><b>出题：</b>减法保证非负，除法保证整除。两位数模式下，加减为两位 ± 两位，乘除为两位 ×/÷ 一位。</p>
+          <p data-i18n-html="help_note_endless_html"><b>无尽关：</b>所有答案固定为 0–9。答题时点一下数字就立即提交，没有确认和删除；难度仍由回溯层数和运算类型决定。</p>
+          <p data-i18n-html="help_note_records_html"><b>记录：</b>只保存在本机浏览器，不上传任何数据。换浏览器或清除站点数据会清空记录。</p>
+        </div>
+      </div>
+      <footer class="dialog-foot dialog-foot-right">
+        <button class="btn btn-accent btn-sm" type="button" data-close data-i18n="help_done">知道了</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog id="quit-dialog" class="dialog dialog-sm" aria-labelledby="quit-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><p class="kicker" id="quit-kicker">END ROUND</p><h2 id="quit-title">结束本局？</h2></div>
+        <button class="icon-btn dialog-close" type="button" data-close aria-label="关闭" data-i18n-aria="close_aria">×</button>
+      </header>
+      <p class="quit-copy" id="quit-text">已答 0 / 25。退出后本局进度不会保存。</p>
+      <div class="quit-actions">
+        <button id="quit-cancel" class="btn btn-quiet" type="button">继续训练</button>
+        <button id="quit-confirm" class="btn btn-danger" type="button">退出本局</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="countdown" class="countdown" hidden aria-live="assertive" aria-atomic="true">
+    <div class="countdown-inner">
+      <p class="eyebrow countdown-eyebrow"><span class="eyebrow-dot"></span>GET READY</p>
+      <div class="count-num" id="count-num">3</div>
+      <p id="count-msg">先记住 1 道题，再开始回溯</p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+(function (global) {
+  'use strict';
+
+  const TOTAL_QUESTIONS = 25;
+  const MIN_N = 1;
+  const MAX_N = 5;
+  const MAX_SESSIONS = 40;
+
+  const OP_SYMBOL = Object.freeze({ '+': '+', '-': '−', '*': '×', '/': '÷' });
+  const OP_NAME = Object.freeze({ '+': '加', '-': '减', '*': '乘', '/': '除' });
+  const OP_NAME_EN = Object.freeze({ '+': 'plus', '-': 'minus', '*': 'times', '/': 'divided by' });
+
+  function clampInt(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(max, Math.max(min, Math.trunc(number)));
+  }
+
+  function randInt(min, max, rng) {
+    return Math.floor(rng() * (max - min + 1)) + min;
+  }
+
+  function normalizeConfig(config) {
+    const source = config && typeof config === 'object' ? config : {};
+    return {
+      n: clampInt(source.n, MIN_N, MAX_N, 1),
+      digits: source.digits === 2 ? 2 : 1,
+      ops: source.ops === 'all' ? 'all' : 'addsub'
+    };
+  }
+
+  function createQuestion(digits, ops, rng) {
+    const random = typeof rng === 'function' ? rng : Math.random;
+    const width = digits === 2 ? 2 : 1;
+    const allOps = ops === 'all';
+    const op = allOps
+      ? ['+', '-', '*', '/'][randInt(0, 3, random)]
+      : (random() < 0.5 ? '+' : '-');
+
+    let a;
+    let b;
+    let answer;
+
+    if (op === '+') {
+      if (width === 1) {
+        a = randInt(2, 9, random);
+        b = randInt(2, 9, random);
+      } else {
+        a = randInt(10, 99, random);
+        b = randInt(10, 99, random);
+      }
+      answer = a + b;
+    } else if (op === '-') {
+      if (width === 1) {
+        a = randInt(3, 9, random);
+        b = randInt(1, a - 1, random);
+      } else {
+        a = randInt(20, 99, random);
+        b = randInt(10, a - 1, random);
+      }
+      answer = a - b;
+    } else if (op === '*') {
+      if (width === 1) {
+        a = randInt(2, 9, random);
+        b = randInt(2, 9, random);
+      } else {
+        a = randInt(10, 99, random);
+        b = randInt(2, 9, random);
+      }
+      answer = a * b;
+    } else {
+      if (width === 1) {
+        b = randInt(2, 9, random);
+        answer = randInt(2, 9, random);
+        a = b * answer;
+      } else {
+        b = randInt(2, 9, random);
+        const minQuotient = Math.max(2, Math.ceil(10 / b));
+        const maxQuotient = Math.floor(99 / b);
+        answer = randInt(minQuotient, maxQuotient, random);
+        a = b * answer;
+      }
+    }
+
+    return {
+      a,
+      b,
+      op,
+      symbol: OP_SYMBOL[op],
+      answer,
+      text: `${a} ${OP_SYMBOL[op]} ${b}`,
+      digits: width,
+      ops: allOps ? 'all' : 'addsub'
+    };
+  }
+
+  function createUniqueQuestion(digits, ops, rng, recentTexts) {
+    const recent = Array.isArray(recentTexts) ? recentTexts : [];
+    let question = createQuestion(digits, ops, rng);
+    for (let attempt = 0; attempt < 14 && recent.includes(question.text); attempt += 1) {
+      question = createQuestion(digits, ops, rng);
+    }
+    return question;
+  }
+
+  function createEndlessQuestion(ops, rng) {
+    const random = typeof rng === 'function' ? rng : Math.random;
+    const allOps = ops === 'all';
+    const op = allOps
+      ? ['+', '-', '*', '/'][randInt(0, 3, random)]
+      : (random() < 0.5 ? '+' : '-');
+
+    let a;
+    let b;
+    let answer;
+
+    if (op === '+') {
+      answer = randInt(0, 9, random);
+      a = randInt(0, answer, random);
+      b = answer - a;
+    } else if (op === '-') {
+      a = randInt(0, 9, random);
+      b = randInt(0, a, random);
+      answer = a - b;
+    } else if (op === '*') {
+      do {
+        a = randInt(0, 9, random);
+        b = randInt(0, 9, random);
+      } while (a * b > 9);
+      answer = a * b;
+    } else {
+      b = randInt(2, 9, random);
+      answer = randInt(0, 9, random);
+      a = b * answer;
+    }
+
+    return {
+      a,
+      b,
+      op,
+      symbol: OP_SYMBOL[op],
+      answer,
+      text: `${a} ${OP_SYMBOL[op]} ${b}`,
+      digits: 1,
+      ops: allOps ? 'all' : 'addsub'
+    };
+  }
+
+  function createUniqueEndlessQuestion(ops, rng, recentTexts) {
+    const recent = Array.isArray(recentTexts) ? recentTexts : [];
+    let question = createEndlessQuestion(ops, rng);
+    for (let attempt = 0; attempt < 14 && recent.includes(question.text); attempt += 1) {
+      question = createEndlessQuestion(ops, rng);
+    }
+    return question;
+  }
+
+  class GameSession {
+    constructor(config, total, rng, options) {
+      const normalized = normalizeConfig(config);
+      this.n = normalized.n;
+      this.digits = normalized.digits;
+      this.ops = normalized.ops;
+      this.endless = Boolean(options && options.endless);
+      this.total = this.endless ? Number.POSITIVE_INFINITY : clampInt(total, 1, 200, TOTAL_QUESTIONS);
+      this.rng = typeof rng === 'function' ? rng : Math.random;
+
+      this.history = [];
+      this.currentIndex = -1;
+      this.warmupDone = 0;
+      this.answered = 0;
+      this.correct = 0;
+      this.score = 0;
+      this.streak = 0;
+      this.bestStreak = 0;
+      this.results = [];
+      this.phase = 'warmup';
+      this.ended = false;
+      this.recentTexts = [];
+
+      this.generateQuestion();
+    }
+
+    generateQuestion() {
+      const question = this.endless
+        ? createUniqueEndlessQuestion(this.ops, this.rng, this.recentTexts)
+        : createUniqueQuestion(this.digits, this.ops, this.rng, this.recentTexts);
+      question.index = this.history.length;
+      this.history.push(question);
+      this.recentTexts.push(question.text);
+      if (this.recentTexts.length > 7) this.recentTexts.shift();
+      this.currentIndex = question.index;
+      return question;
+    }
+
+    get current() {
+      return this.history[this.currentIndex] || null;
+    }
+
+    get target() {
+      if (this.phase !== 'answer' && this.phase !== 'feedback') return null;
+      const index = this.currentIndex - this.n;
+      return index >= 0 ? this.history[index] : null;
+    }
+
+    get accuracy() {
+      return this.answered > 0 ? this.correct / this.answered : 0;
+    }
+
+    get warmupTotal() {
+      return this.n;
+    }
+
+    memorize() {
+      if (this.phase !== 'warmup') return this.phase;
+      this.warmupDone += 1;
+
+      if (this.warmupDone < this.n) {
+        this.generateQuestion();
+      } else {
+        this.phase = 'answer';
+        this.generateQuestion();
+      }
+      return this.phase;
+    }
+
+    submit(rawValue, responseMs) {
+      if (this.phase !== 'answer') {
+        throw new Error('Cannot submit outside the answer phase.');
+      }
+      const target = this.target;
+      if (!target) {
+        throw new Error('No target question available.');
+      }
+
+      const value = Number(rawValue);
+      const isCorrect = Number.isFinite(value) && value === target.answer;
+
+      this.answered += 1;
+      if (isCorrect) {
+        this.correct += 1;
+        this.score += 100;
+        this.streak += 1;
+        this.bestStreak = Math.max(this.bestStreak, this.streak);
+      } else {
+        this.streak = 0;
+      }
+
+      const record = {
+        correct: isCorrect,
+        value: Number.isFinite(value) ? value : 0,
+        targetAnswer: target.answer,
+        targetText: target.text,
+        targetIndex: target.index,
+        questionIndex: this.currentIndex,
+        responseMs: Math.max(0, Number(responseMs) || 0),
+        score: this.score,
+        streak: this.streak,
+        answered: this.answered
+      };
+
+      this.results.push(record);
+      this.phase = 'feedback';
+      return record;
+    }
+
+    advance() {
+      if (this.phase !== 'feedback') return this.phase;
+      if (this.endless) {
+        if (this.ended) {
+          this.phase = 'done';
+          return this.phase;
+        }
+        this.phase = 'answer';
+        this.generateQuestion();
+        return this.phase;
+      }
+      if (this.answered >= this.total) {
+        this.phase = 'done';
+        return this.phase;
+      }
+      this.phase = 'answer';
+      this.generateQuestion();
+      return this.phase;
+    }
+
+    end() {
+      this.ended = true;
+      this.phase = 'done';
+      return this.phase;
+    }
+  }
+
+  function rankFor(correct, total) {
+    const ratio = total > 0 ? correct / total : 0;
+    if (ratio >= 1) return 'S';
+    if (ratio >= 0.9) return 'A';
+    if (ratio >= 0.75) return 'B';
+    if (ratio >= 0.6) return 'C';
+    return 'D';
+  }
+
+  function maxInputDigits(config) {
+    const normalized = normalizeConfig(config);
+    return normalized.digits === 1 ? 2 : 3;
+  }
+
+  function statusText(n, lang) {
+    if (lang === 'en') return `${n} back`;
+    if (n === 1) return '上一题';
+    if (n === 2) return '上上一题';
+    return `${n} 题前`;
+  }
+
+  function configLabel(config, short, lang) {
+    const normalized = normalizeConfig(config);
+    if (lang === 'en') {
+      const digits = `${normalized.digits}-digit`;
+      const ops = normalized.ops === 'all' ? 'all four' : 'add & subtract';
+      if (short) {
+        return `${normalized.n}-back · ${normalized.digits}-digit · ${normalized.ops === 'all' ? '4 ops' : '+ −'}`;
+      }
+      return `${normalized.n}-back · ${digits} · ${ops}`;
+    }
+    const digits = normalized.digits === 2 ? '两位数' : '个位数';
+    const ops = normalized.ops === 'all' ? '加减乘除' : '加减';
+    if (short) {
+      return `${normalized.n}回溯 · ${normalized.digits}位 · ${normalized.ops === 'all' ? '四则' : '加减'}`;
+    }
+    return `${normalized.n}-回溯 · ${digits} · ${ops}`;
+  }
+
+  function endlessLabel(config, short, lang) {
+    const normalized = normalizeConfig(config);
+    if (lang === 'en') {
+      const ops = normalized.ops === 'all' ? 'all four' : 'add & subtract';
+      if (short) {
+        return `Endless · ${normalized.n}-back · ${normalized.ops === 'all' ? '4 ops' : '+ −'}`;
+      }
+      return `Endless · 0–9 · ${normalized.n}-back · ${ops}`;
+    }
+    const ops = normalized.ops === 'all' ? '加减乘除' : '加减';
+    if (short) {
+      return `无尽 · ${normalized.n}回溯 · ${normalized.ops === 'all' ? '四则' : '加减'}`;
+    }
+    return `无尽 · 0–9 · ${normalized.n}-回溯 · ${ops}`;
+  }
+
+  function questionLabel(question, lang) {
+    const names = lang === 'en' ? OP_NAME_EN : OP_NAME;
+    return `${question.a} ${names[question.op]} ${question.b}`;
+  }
+
+  function formatDuration(ms) {
+    const totalSeconds = Math.max(0, Math.round((Number(ms) || 0) / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (value) => String(value).padStart(2, '0');
+    if (hours > 0) return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+    return `${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  function formatAverage(ms) {
+    const seconds = (Number(ms) || 0) / 1000;
+    if (!Number.isFinite(seconds) || seconds <= 0) return '—';
+    if (seconds < 10) return `${seconds.toFixed(1)}s`;
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const rest = Math.round(seconds % 60);
+    return `${minutes}m${String(rest).padStart(2, '0')}s`;
+  }
+
+  function sanitizeSession(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const timestamp = Number(raw.ts);
+    if (!Number.isFinite(timestamp)) return null;
+    const total = clampInt(raw.total, 0, 10000, TOTAL_QUESTIONS);
+    const correct = clampInt(raw.correct, 0, total, 0);
+    return {
+      ts: timestamp,
+      mode: raw.mode === 'endless' ? 'endless' : 'normal',
+      n: clampInt(raw.n, MIN_N, MAX_N, 1),
+      digits: raw.digits === 2 ? 2 : 1,
+      ops: raw.ops === 'all' ? 'all' : 'addsub',
+      correct,
+      total,
+      score: correct * 100,
+      bestStreak: clampInt(raw.bestStreak, 0, total, 0),
+      avgMs: clampInt(raw.avgMs, 0, 60 * 60 * 1000, 0),
+      durationMs: clampInt(raw.durationMs, 0, 24 * 60 * 60 * 1000, 0)
+    };
+  }
+
+  function sanitizeStore(raw) {
+    const fallback = {
+      version: 1,
+      settings: { n: 1, digits: 1, ops: 'addsub' },
+      theme: null,
+      language: 'zh',
+      setupMode: 'normal',
+      sessions: []
+    };
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return fallback;
+
+    const settings = normalizeConfig(raw.settings);
+    const theme = raw.theme === 'dark' || raw.theme === 'light' ? raw.theme : null;
+    const language = raw.language === 'en' ? 'en' : 'zh';
+    const setupMode = raw.setupMode === 'endless' ? 'endless' : 'normal';
+    const sessions = [];
+
+    if (Array.isArray(raw.sessions)) {
+      raw.sessions.slice(-60).forEach((item) => {
+        const session = sanitizeSession(item);
+        if (session) sessions.push(session);
+      });
+    }
+
+    return {
+      version: 1,
+      settings,
+      theme,
+      language,
+      setupMode,
+      sessions: sessions.slice(-MAX_SESSIONS)
+    };
+  }
+
+  function findBest(sessions, config, mode) {
+    const normalized = normalizeConfig(config);
+    const wantedMode = mode === 'endless' ? 'endless' : 'normal';
+    const matches = (Array.isArray(sessions) ? sessions : []).filter((session) => (
+      session
+      && session.mode === wantedMode
+      && session.n === normalized.n
+      && (wantedMode === 'endless' || session.digits === normalized.digits)
+      && session.ops === normalized.ops
+    ));
+    let best = null;
+    matches.forEach((session) => {
+      if (!best) {
+        best = session;
+        return;
+      }
+      if (session.correct > best.correct) {
+        best = session;
+        return;
+      }
+      if (session.correct === best.correct) {
+        const speed = session.avgMs > 0 ? session.avgMs : Number.POSITIVE_INFINITY;
+        const bestSpeed = best.avgMs > 0 ? best.avgMs : Number.POSITIVE_INFINITY;
+        if (speed < bestSpeed) best = session;
+      }
+    });
+    return best;
+  }
+
+  function findEndlessBest(sessions, config) {
+    const normalized = normalizeConfig(config);
+    const matches = (Array.isArray(sessions) ? sessions : []).filter((session) => (
+      session
+      && session.mode === 'endless'
+      && session.n === normalized.n
+      && session.ops === normalized.ops
+    ));
+    let best = null;
+    matches.forEach((session) => {
+      if (!best) {
+        best = session;
+        return;
+      }
+      if (session.score > best.score) {
+        best = session;
+        return;
+      }
+      if (session.score === best.score) {
+        const accuracy = session.total > 0 ? session.correct / session.total : 0;
+        const bestAccuracy = best.total > 0 ? best.correct / best.total : 0;
+        if (accuracy > bestAccuracy) {
+          best = session;
+          return;
+        }
+        if (accuracy === bestAccuracy) {
+          const speed = session.avgMs > 0 ? session.avgMs : Number.POSITIVE_INFINITY;
+          const bestSpeed = best.avgMs > 0 ? best.avgMs : Number.POSITIVE_INFINITY;
+          if (speed < bestSpeed) best = session;
+        }
+      }
+    });
+    return best;
+  }
+
+  const api = {
+    TOTAL_QUESTIONS,
+    MIN_N,
+    MAX_N,
+    MAX_SESSIONS,
+    OP_SYMBOL,
+    OP_NAME,
+    clampInt,
+    randInt,
+    normalizeConfig,
+    createQuestion,
+    createUniqueQuestion,
+    createEndlessQuestion,
+    createUniqueEndlessQuestion,
+    GameSession,
+    rankFor,
+    maxInputDigits,
+    statusText,
+    configLabel,
+    endlessLabel,
+    questionLabel,
+    formatDuration,
+    formatAverage,
+    sanitizeSession,
+    sanitizeStore,
+    findBest,
+    findEndlessBest
+  };
+
+  global.DevilEngine = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+  <script>
+(function () {
+  'use strict';
+
+  const E = window.DevilEngine;
+  if (!E) {
+    document.body.textContent = 'Calculation engine failed to load. / 计算引擎加载失败，请刷新页面。';
+    return;
+  }
+
+  const STORAGE_KEY = 'devilCalcNBack.v1';
+  const $ = (id) => document.getElementById(id);
+  const pad2 = (value) => String(value).padStart(2, '0');
+
+  const I18N = {
+    zh: {
+      brand: `魔鬼计算`,
+      nav_log: `记录`,
+      nav_help: `怎么玩`,
+      brand_home_aria: `返回首页`,
+      theme_dark_aria: `切换到深色主题`,
+      theme_light_aria: `切换到浅色主题`,
+      lang_switch_en: `切换到英文`,
+      lang_switch_zh: `切换到中文`,
+      hero_eyebrow: `WORKING MEMORY · 心算训练`,
+      hero_title_html: `记住 N 题前，<br><em>而不是眼前。</em>`,
+      hero_lede_html: `一边计算新题，一边回溯旧答案。当前算式只是干扰项，<br class="desktop-break">真正要输的是 N 题之前那道题的答案。`,
+      tag_round_html: `<b>25</b> 题 / 局`,
+      tag_back_html: `<b>1–5</b> 回溯`,
+      tag_ops_html: `<b>4</b> 种运算`,
+      tag_endless_html: `<b>∞</b> 无尽 0–9`,
+      tag_offline_html: `<b>0</b> 联网`,
+      strip_q1: `第 1 题 · 记住 7`,
+      strip_q2: `第 2 题 · 记住 4`,
+      strip_a1_html: `回答第 1 题 <b>7</b>`,
+      setup_title: `设置这一局`,
+      round_25: `25 题 / 局`,
+      round_endless: `∞ 无尽`,
+      mode_aria: `训练模式`,
+      mode_normal: `25 题训练`,
+      mode_normal_sub: `有始有终`,
+      mode_endless: `无尽 · 0–9`,
+      mode_endless_sub: `点数字即答`,
+      field_back: `回溯层数`,
+      field_digits: `数字范围`,
+      field_endless: `无尽规则`,
+      field_ops: `运算类型`,
+      hint_back_1: `回答上一题的答案`,
+      hint_back_2: `回答上上一题的答案`,
+      hint_back_n: `回答 {n} 题前的答案`,
+      hint_digits: `决定心算的强度`,
+      hint_endless: `答案锁定 0–9`,
+      hint_ops: `加减，或四则混合`,
+      back_short: `回溯`,
+      digits_1: `个位数`,
+      digits_1_sub: `一位数 + − × ÷，表内乘除`,
+      digits_2: `两位数`,
+      digits_2_sub: `两位加减 · 两位 ×/÷ 一位`,
+      endless_info: `所有结果都在 0–9 之间。答题时直接点数字，立即提交；没有确认，也没有删除。数字范围设置不会影响本关。`,
+      ops_addsub: `加减`,
+      ops_addsub_sub: `只出现 + 和 −`,
+      ops_all: `加减乘除`,
+      ops_all_sub: `四则混合，除法保证整除`,
+      n_aria: `回溯层数`,
+      digits_aria: `数字范围`,
+      ops_aria: `运算类型`,
+      start_normal: `开始训练`,
+      start_endless: `开始无尽`,
+      best_none: `当前设置还没有记录`,
+      best_normal: `当前设置最佳 {percent}%{speed}`,
+      best_speed: ` · {avg}/题`,
+      best_endless_none: `还没有无尽纪录`,
+      best_endless: `无尽最佳 {score} 分 · {percent}%`,
+      best_storage: ` · 记录不会保存`,
+      setup_note_normal: `不限时 · 按自己的节奏`,
+      setup_note_endless: `不限时 · 一直答到你想停`,
+      guide_title: `别答眼前这道题`,
+      guide_step1_title: `先算，再记`,
+      guide_step1_text: `每题出现时，先算出答案，把它放进脑子里的记忆队列。`,
+      guide_step2_title: `回头看 N 题`,
+      guide_step2_text: `从第 N+1 题起，输入的是 N 题前那道题的答案。当前题只是新的记忆材料。`,
+      guide_step3_title: `连续训练`,
+      guide_step3_text: `普通局 25 题；无尽关一直答到你想停。答错不中断，会显示旧题的正确答案。`,
+      guide_fineprint: `减法不会出现负数，除法保证整除。两位数模式下，加减为两位 ± 两位，乘除为两位 ×/÷ 一位。无尽关所有答案固定为 0–9。`,
+      guide_more: `查看完整玩法`,
+      example_back: `2-回溯示例`,
+      example_now: `当前是第 3 题`,
+      example_q1: `第 1 题 · 记住 7`,
+      example_q2: `第 2 题 · 记住 4`,
+      example_q3: `第 3 题 · 别答 18`,
+      example_answer_label: `你要回答`,
+      example_answer_note: `第 1 题的答案`,
+      example_aria: `2-回溯示例`,
+      footer_code: `所有代码和数据都在这个网页里`,
+      footer_offline: `无需联网`,
+      footer_records: `记录仅保存在本机浏览器`,
+      game_title_sr: `魔鬼计算训练中`,
+      game_quit_exit: `退出`,
+      game_quit_end: `结束`,
+      game_hud_label: `无尽 · 0–9`,
+      hud_answered: `已答`,
+      hud_score: `得分`,
+      game_warm_hint: `答案不会显示，请自己计算`,
+      game_streak: `连击`,
+      game_time: `用时`,
+      game_correction: `正确答案`,
+      game_continue: `继续`,
+      game_backspace_aria: `删除一位`,
+      game_submit_aria: `提交答案`,
+      game_digit_aria: `数字 {digit}`,
+      result_panel_aria: `本局成绩`,
+      result_score_label: `总得分`,
+      result_points: `分`,
+      result_new_best: `NEW BEST · 新纪录`,
+      result_score_note_normal: `答对一题 100 分，满分 2500 分。`,
+      result_score_note_endless: `无尽模式 · 答对一题 100 分，不设上限。`,
+      result_stat_correct: `答对`,
+      result_stat_streak: `最长连击`,
+      result_stat_avg: `平均每题`,
+      result_stat_time: `总用时`,
+      result_pattern: `答题轨迹`,
+      result_pattern_aria: `本局答题轨迹`,
+      result_play_again: `再来一局`,
+      result_play_endless: `再战无尽`,
+      result_adjust: `调整设置`,
+      result_history: `查看训练记录`,
+      result_foot_normal: `同一设置下，正确率相同则平均用时更短者刷新纪录。`,
+      result_foot_endless: `无尽模式按总得分计算纪录；同分时正确率更高者优先。`,
+      history_title: `训练记录`,
+      history_sub: `只保存在当前浏览器`,
+      history_sub_count: `共 {count} 次训练 · 按时间倒序`,
+      history_sub_count_one: `已保存 {count} 次训练`,
+      history_storage: ` · 当前浏览器禁止保存`,
+      history_clear: `清空记录`,
+      history_clear_confirm: `再点一次确认清空`,
+      history_close: `关闭`,
+      history_empty_title: `还没有训练记录`,
+      history_empty_copy: `完成一局后，成绩会自动保存在这里。`,
+      history_meta: `{correct}/{total} 题 · 连击 {streak} · {avg}/题`,
+      history_score: `{score} 分`,
+      history_cleared: `训练记录已清空`,
+      help_title: `怎么玩`,
+      help_lead: `一句话：一边计算当前题目，一边填写前 N 题的答案。`,
+      help_step1_title: `先记住 N 题`,
+      help_step1_text: `开局会有 N 道热身题。每题出现时，先算出答案，记在脑子里，然后点「记住了」。`,
+      help_step2_title: `开始回溯`,
+      help_step2_text: `从第 N+1 题起，要回答的是 N 题前那道题的答案。当前题只需要继续计算并记住，不要回答它的答案。`,
+      help_step3_title: `连续训练`,
+      help_step3_text: `普通局 25 题；无尽关一直答到你想停。答错不中断，会显示旧题的正确答案。`,
+      help_example_1: `2-回溯 · 第 1 题`,
+      help_example_2: `第 2 题`,
+      help_example_3: `第 3 题出现时`,
+      help_remember: `记住`,
+      help_answer: `回答 7`,
+      help_note_time_html: `<b>计时：</b>不限时，按自己的节奏。总用时和平均每题时间会记录在成绩里。`,
+      help_note_gen_html: `<b>出题：</b>减法保证非负，除法保证整除。两位数模式下，加减为两位 ± 两位，乘除为两位 ×/÷ 一位。`,
+      help_note_endless_html: `<b>无尽关：</b>所有答案固定为 0–9。答题时点一下数字就立即提交，没有确认和删除；难度仍由回溯层数和运算类型决定。`,
+      help_note_records_html: `<b>记录：</b>只保存在本机浏览器，不上传任何数据。换浏览器或清除站点数据会清空记录。`,
+      help_done: `知道了`,
+      close_aria: `关闭`,
+      quit_kicker_normal: `END ROUND`,
+      quit_kicker_endless: `END ENDLESS`,
+      quit_title_normal: `结束本局？`,
+      quit_title_endless: `结束无尽挑战？`,
+      quit_text_no_answers: `还没有作答，结束后会直接回到设置。`,
+      quit_text_endless: `已答 {answered} 题，得分 {score}。结束后会生成本次无尽成绩。`,
+      quit_text_normal: `已答 {answered} / {total}。退出后本局进度不会保存。`,
+      quit_confirm_no: `结束挑战`,
+      quit_confirm_endless: `结束并结算`,
+      quit_confirm_normal: `退出本局`,
+      quit_cancel_endless: `继续挑战`,
+      quit_cancel_normal: `继续训练`,
+      quit_exited: `本局已退出`,
+      countdown_normal: `先记住 {count} 道题，再开始回溯`,
+      countdown_normal_one: `先记住 1 道题，再开始回溯`,
+      countdown_endless: `先记住 {count} 道题，再开始无尽`,
+      countdown_endless_one: `先记住 1 道题，再开始无尽`,
+      countdown_go: `开始`,
+      nudge_input: `先输入一个答案`,
+      start_fail: `开局失败，请刷新页面后重试`,
+      no_answers: `还没有作答，回到设置`,
+      storage_fail: `浏览器未允许本地存储，记录不会保存`,
+      engine_fail: `计算引擎加载失败，请刷新页面。`,
+      title_home: `魔鬼计算 · N-Back 心算训练`,
+      title_game: `训练中 · 魔鬼计算`,
+      title_result: `本局结果 · 魔鬼计算`,
+      meta_description: `一个完全离线的 N-back 心算训练小游戏：支持 1–5 回溯、个位/两位数、加减与四则运算，以及 0–9 无尽关。`,
+      state_warm: `记忆热身 {current} / {n}`,
+      state_answer: `回答 {prompt}`,
+      sub_warm: `算出答案，记在心里；稍后会被问到`,
+      sub_answer_endless: `轻点 0–9，直接提交旧题的答案`,
+      sub_answer_normal: `当前题只用于记忆，请输入旧题的答案`,
+      answer_keep: `把答案记在心里`,
+      answer_aria_warm: `把这一题的答案记在心里`,
+      answer_aria_prompt: `输入 {prompt} 的答案`,
+      tap_hint: `点数字，立即提交`,
+      memorize_next: `记住了，下一题`,
+      memorize_start: `记住了，开始作答`,
+      progress_endless: `已答 {answered} 题`,
+      progress_normal: `已答 {answered} / {total}`,
+      score: `{score} 分`,
+      ready: `准备开始`,
+      ready_sub: `准备好了吗？`,
+      first_question: `第 1 题即将出现`,
+      feedback_correct: `✓ 正确 +100`,
+      feedback_correct_streak: `✓ 正确 +100 · 连击 {streak}`,
+      feedback_wrong: `✗ 不对，正确答案是 {answer}`,
+      feedback_endless_wrong: `✗ 答案是 {answer} · {text}`,
+      wrong_input: `你输入了 {value}`,
+      result_eyebrow_normal: `ROUND COMPLETE · 本局完成`,
+      result_eyebrow_endless: `ENDLESS · 无尽结束`,
+      result_title_normal_S: `完美，魔鬼也服气。`,
+      result_title_normal_A: `稳得很。`,
+      result_title_normal_B: `节奏不错，还能更稳。`,
+      result_title_normal_C: `有点魔鬼，但追得上。`,
+      result_title_normal_D: `先慢下来，把正确率捡回来。`,
+      result_title_endless_S: `无尽也拦不住你。`,
+      result_title_endless_A: `越战越稳。`,
+      result_title_endless_B: `节奏不错，继续加码。`,
+      result_title_endless_C: `还能再稳一点。`,
+      result_title_endless_D: `先找回节奏。`,
+      result_title_endless_streak: `连击怪物。`,
+      pattern_legend_long: `最近 {count} 题 · 绿=答对 · 红=答错`,
+      pattern_legend_short: `绿=答对 · 红=答错`,
+      pattern_aria_normal: `本局答题轨迹，共 {total} 题：{labels}`,
+      pattern_aria_endless: `无尽答题轨迹，共 {total} 题，显示最近 {shown} 题，答对 {correct} 题`,
+      pattern_item_title: `第 {n} 题：{result}`,
+      pattern_item_label: `第 {n} 题{result}`,
+      pattern_correct: `正确`,
+      pattern_wrong: `错误`,
+      sug_normal_raise: `正确率 {percent}%，这个难度已经稳住。试试 {next}-回溯？`,
+      sug_label_raise: `试试 {next}-回溯`,
+      sug_normal_2digit: `5-回溯也稳了，换两位数继续？`,
+      sug_label_2digit: `换成两位数`,
+      sug_normal_max: `最高配置还能保持正确率，魔鬼本人了。`,
+      sug_normal_lower: `先把回溯降到 {next}，正确率比难度更重要。`,
+      sug_label_lower: `试试 {next}-回溯`,
+      sug_normal_digits_down: `两位数压力有点大，换回个位数找找节奏？`,
+      sug_label_digits_down: `换成个位数`,
+      sug_normal_ops_down: `先去掉乘除，专注加减，把正确率捡回来。`,
+      sug_label_ops_down: `改为加减`,
+      sug_normal_perfect: `全对。魔鬼计算，不过如此。`,
+      sug_normal_slow: `先把节奏放慢，正确率比速度更重要。`,
+      sug_normal_steady: `状态很稳，再来一局保持手感。`,
+      sug_normal_default: `保持这个节奏，再来一局。`,
+      sug_endless_more: `多答几题，成绩会更有参考价值。`,
+      sug_endless_raise: `正确率 {percent}%，试试 {next}-回溯的无尽关？`,
+      sug_endless_max: `5-回溯无尽关还能稳住，魔鬼本人了。`,
+      sug_endless_lower: `把回溯降到 {next}，先把节奏捡回来。`,
+      sug_endless_digits_down: `两位数压力有点大，换回个位数找找节奏？`,
+      sug_endless_ops_down: `先用加减无尽关找回节奏。`,
+      sug_endless_slow: `先把节奏放慢，正确率比速度更重要。`,
+      sug_endless_default: `再来一局，看看能连对多少。`
+    },
+    en: {
+      brand: `Devil Calculation`,
+      nav_log: `Log`,
+      nav_help: `Rules`,
+      brand_home_aria: `Back to home`,
+      theme_dark_aria: `Switch to dark theme`,
+      theme_light_aria: `Switch to light theme`,
+      lang_switch_en: `Switch to English`,
+      lang_switch_zh: `Switch to Chinese`,
+      hero_eyebrow: `WORKING MEMORY · MENTAL MATH`,
+      hero_title_html: `Remember N&nbsp;back,<br><em>not this one.</em>`,
+      hero_lede_html: `Solve the new problem while recalling an old answer. The current expression is a distraction —<br class="desktop-break">what you enter is the answer from N questions ago.`,
+      tag_round_html: `<b>25</b> questions / round`,
+      tag_back_html: `<b>1–5</b> back`,
+      tag_ops_html: `<b>4</b> operations`,
+      tag_endless_html: `<b>∞</b> Endless 0–9`,
+      tag_offline_html: `<b>0</b> network`,
+      strip_q1: `Q1 · remember 7`,
+      strip_q2: `Q2 · remember 4`,
+      strip_a1_html: `Answer Q1 <b>7</b>`,
+      setup_title: `Set up this round`,
+      round_25: `25 / round`,
+      round_endless: `∞ Endless`,
+      mode_aria: `Training mode`,
+      mode_normal: `25-question`,
+      mode_normal_sub: `Finite round`,
+      mode_endless: `Endless · 0–9`,
+      mode_endless_sub: `Tap to answer`,
+      field_back: `Back level`,
+      field_digits: `Number range`,
+      field_endless: `Endless rules`,
+      field_ops: `Operations`,
+      hint_back_1: `Answer 1 back`,
+      hint_back_2: `Answer 2 back`,
+      hint_back_n: `Answer {n} back`,
+      hint_digits: `Sets the mental load`,
+      hint_endless: `Answers fixed 0–9`,
+      hint_ops: `Add/subtract or all four`,
+      back_short: `BACK`,
+      digits_1: `1-digit`,
+      digits_1_sub: `1-digit + − × ÷, times-table division`,
+      digits_2: `2-digit`,
+      digits_2_sub: `2-digit + − · 2-digit ×/÷ 1-digit`,
+      endless_info: `Every answer is 0–9. Tap a digit to submit instantly — no confirm or delete. The number-range setting doesn't apply.`,
+      ops_addsub: `Add & subtract`,
+      ops_addsub_sub: `+ and − only`,
+      ops_all: `All four`,
+      ops_all_sub: `Mixed, division exact`,
+      n_aria: `Back level`,
+      digits_aria: `Number range`,
+      ops_aria: `Operations`,
+      start_normal: `Start training`,
+      start_endless: `Start endless`,
+      best_none: `No record for this setup yet`,
+      best_normal: `Best for this setup: {percent}%{speed}`,
+      best_speed: ` · {avg}/q`,
+      best_endless_none: `No endless record yet`,
+      best_endless: `Endless best: {score} pts · {percent}%`,
+      best_storage: ` · records won't be saved`,
+      setup_note_normal: `Untimed · go at your own pace`,
+      setup_note_endless: `Untimed · stop whenever you like`,
+      guide_title: `Don't answer the current one`,
+      guide_step1_title: `Compute, then hold`,
+      guide_step1_text: `Work out each answer and keep it in your mental queue.`,
+      guide_step2_title: `Look N back`,
+      guide_step2_text: `From question N+1 on, enter the answer from N questions ago. The current question is just new material.`,
+      guide_step3_title: `Keep going`,
+      guide_step3_text: `25 questions in a normal round; endless runs until you stop. A wrong answer shows the old correction and continues.`,
+      guide_fineprint: `Subtraction never goes negative; division is exact. In 2-digit mode, + − use two-digit operands; ×/÷ pair a two-digit number with a one-digit number. Endless answers are always 0–9.`,
+      guide_more: `Full rules`,
+      example_back: `2-back example`,
+      example_now: `Now showing Q3`,
+      example_q1: `Q1 · remember 7`,
+      example_q2: `Q2 · remember 4`,
+      example_q3: `Q3 · don't answer 18`,
+      example_answer_label: `You answer`,
+      example_answer_note: `answer to Q1`,
+      example_aria: `2-back example`,
+      footer_code: `All code and data live in this page`,
+      footer_offline: `Works offline`,
+      footer_records: `Records stay in this browser`,
+      game_title_sr: `Devil Calculation training`,
+      game_quit_exit: `Exit`,
+      game_quit_end: `End`,
+      game_hud_label: `Endless · 0–9`,
+      hud_answered: `Answered`,
+      hud_score: `Score`,
+      game_warm_hint: `The answer won't be shown — calculate it yourself`,
+      game_streak: `Streak`,
+      game_time: `Time`,
+      game_correction: `Correct answer`,
+      game_continue: `Continue`,
+      game_backspace_aria: `Delete one digit`,
+      game_submit_aria: `Submit answer`,
+      game_digit_aria: `Number {digit}`,
+      result_panel_aria: `Round result`,
+      result_score_label: `Total score`,
+      result_points: `pts`,
+      result_new_best: `NEW BEST`,
+      result_score_note_normal: `100 points per correct answer · max 2,500.`,
+      result_score_note_endless: `Endless · 100 points per correct answer, no cap.`,
+      result_stat_correct: `Correct`,
+      result_stat_streak: `Best streak`,
+      result_stat_avg: `Avg / question`,
+      result_stat_time: `Total time`,
+      result_pattern: `Answer track`,
+      result_pattern_aria: `Answer track for this round`,
+      result_play_again: `Play again`,
+      result_play_endless: `Run endless again`,
+      result_adjust: `Adjust settings`,
+      result_history: `View training log`,
+      result_foot_normal: `For the same setup, a faster average breaks a tie.`,
+      result_foot_endless: `Endless records go by score; a higher accuracy breaks a tie.`,
+      history_title: `Training log`,
+      history_sub: `Saved only in this browser`,
+      history_sub_count: `{count} sessions · newest first`,
+      history_sub_count_one: `{count} session saved`,
+      history_storage: ` · storage disabled`,
+      history_clear: `Clear log`,
+      history_clear_confirm: `Click again to clear`,
+      history_close: `Close`,
+      history_empty_title: `No sessions yet`,
+      history_empty_copy: `Finish a round and it will appear here.`,
+      history_meta: `{correct}/{total} · streak {streak} · {avg}/q`,
+      history_score: `{score} pts`,
+      history_cleared: `Training log cleared`,
+      help_title: `How to play`,
+      help_lead: `In one sentence: solve the current problem while entering the answer from N questions ago.`,
+      help_step1_title: `Memorize N questions`,
+      help_step1_text: `Each round starts with N warm-up questions. Work out each answer, hold it, then tap "Got it".`,
+      help_step2_title: `Start looking back`,
+      help_step2_text: `From question N+1, answer the question N steps back. Keep solving the current one — don't enter its answer.`,
+      help_step3_title: `Keep training`,
+      help_step3_text: `25 questions in a normal round; endless runs until you stop. A wrong answer shows the old correction and continues.`,
+      help_example_1: `2-back · Q1`,
+      help_example_2: `Q2`,
+      help_example_3: `When Q3 appears`,
+      help_remember: `remember`,
+      help_answer: `answer 7`,
+      help_note_time_html: `<b>Timing:</b> Untimed. Total and average time are recorded.`,
+      help_note_gen_html: `<b>Questions:</b> Subtraction is non-negative and division is exact. In 2-digit mode, + − use two-digit operands; ×/÷ pair a two-digit number with a one-digit number.`,
+      help_note_endless_html: `<b>Endless:</b> Answers are fixed 0–9. Tap a digit to submit — no confirm or delete. Difficulty follows the back level and operation type.`,
+      help_note_records_html: `<b>Records:</b> Stored in this browser only. No data is uploaded. Changing browsers or clearing site data clears them.`,
+      help_done: `Got it`,
+      close_aria: `Close`,
+      quit_kicker_normal: `END ROUND`,
+      quit_kicker_endless: `END ENDLESS`,
+      quit_title_normal: `End this round?`,
+      quit_title_endless: `End the endless run?`,
+      quit_text_no_answers: `No answers yet — ending will return to setup.`,
+      quit_text_endless: `Answered {answered}, score {score}. Ending will save this endless result.`,
+      quit_text_normal: `Answered {answered} / {total}. This round won't be saved.`,
+      quit_confirm_no: `End run`,
+      quit_confirm_endless: `End & see result`,
+      quit_confirm_normal: `Exit round`,
+      quit_cancel_endless: `Keep going`,
+      quit_cancel_normal: `Keep training`,
+      quit_exited: `Round exited`,
+      countdown_normal: `Memorize {count} questions first, then start`,
+      countdown_normal_one: `Memorize 1 question first, then start`,
+      countdown_endless: `Memorize {count} questions first, then start endless`,
+      countdown_endless_one: `Memorize 1 question first, then start endless`,
+      countdown_go: `Go`,
+      nudge_input: `Enter an answer first`,
+      start_fail: `Couldn't start — refresh and try again`,
+      no_answers: `No answers yet — back to setup`,
+      storage_fail: `Browser storage unavailable — records won't be saved`,
+      engine_fail: `Calculation engine failed to load. Please refresh.`,
+      title_home: `Devil Calculation · N-Back Mental Math`,
+      title_game: `Training · Devil Calculation`,
+      title_result: `Result · Devil Calculation`,
+      meta_description: `An offline N-back mental math game with 1–5 back, single or two-digit questions, add/subtract or all four operations, and a 0–9 endless mode.`,
+      state_warm: `Memorize {current} / {n}`,
+      state_answer: `Answer {prompt}`,
+      sub_warm: `Work it out and hold it — you'll be asked later`,
+      sub_answer_endless: `Tap 0–9 to submit the old answer`,
+      sub_answer_normal: `This question is only for memory — enter the old answer`,
+      answer_keep: `Keep the answer in mind`,
+      answer_aria_warm: `Keep this answer in mind`,
+      answer_aria_prompt: `Enter the answer from {prompt}`,
+      tap_hint: `Tap a digit to submit`,
+      memorize_next: `Got it, next`,
+      memorize_start: `Got it, start`,
+      progress_endless: `Answered {answered}`,
+      progress_normal: `Answered {answered} / {total}`,
+      score: `{score} pts`,
+      ready: `Get ready`,
+      ready_sub: `Ready?`,
+      first_question: `Question 1 is coming up.`,
+      feedback_correct: `✓ Correct +100`,
+      feedback_correct_streak: `✓ Correct +100 · streak {streak}`,
+      feedback_wrong: `✗ Wrong — the answer is {answer}`,
+      feedback_endless_wrong: `✗ Answer {answer} · {text}`,
+      wrong_input: `You entered {value}`,
+      result_eyebrow_normal: `ROUND COMPLETE`,
+      result_eyebrow_endless: `ENDLESS · COMPLETE`,
+      result_title_normal_S: `Perfect. Even the devil bows.`,
+      result_title_normal_A: `Rock solid.`,
+      result_title_normal_B: `Good rhythm — make it steadier.`,
+      result_title_normal_C: `Tricky — but you can catch up.`,
+      result_title_normal_D: `Slow down and rebuild accuracy.`,
+      result_title_endless_S: `Endless couldn't stop you.`,
+      result_title_endless_A: `Steady the longer you go.`,
+      result_title_endless_B: `Nice pace — keep pushing.`,
+      result_title_endless_C: `A little more consistency.`,
+      result_title_endless_D: `Find your rhythm again.`,
+      result_title_endless_streak: `Streak monster.`,
+      pattern_legend_long: `Last {count} · green = correct · red = wrong`,
+      pattern_legend_short: `green = correct · red = wrong`,
+      pattern_aria_normal: `Round answer track, {total} questions: {labels}`,
+      pattern_aria_endless: `Endless answer track · {total} answered · last {shown} shown · {correct} correct`,
+      pattern_item_title: `Q{n}: {result}`,
+      pattern_item_label: `Q{n} {result}`,
+      pattern_correct: `correct`,
+      pattern_wrong: `wrong`,
+      sug_normal_raise: `You're at {percent}% — this level is solid. Try {next} back?`,
+      sug_label_raise: `Try {next} back`,
+      sug_normal_2digit: `5-back is solid. Try 2-digit?`,
+      sug_label_2digit: `Use 2-digit`,
+      sug_normal_max: `Max settings and still accurate. Devil-tier.`,
+      sug_normal_lower: `Drop to {next} back — accuracy beats difficulty.`,
+      sug_label_lower: `Try {next} back`,
+      sug_normal_digits_down: `2-digit is heavy — go back to 1-digit for rhythm?`,
+      sug_label_digits_down: `Use 1-digit`,
+      sug_normal_ops_down: `Drop ×/÷ and focus on + − to rebuild accuracy.`,
+      sug_label_ops_down: `Use + −`,
+      sug_normal_perfect: `All correct. So much for the devil.`,
+      sug_normal_slow: `Slow down — accuracy beats speed.`,
+      sug_normal_steady: `Steady. One more round to keep the feel.`,
+      sug_normal_default: `Keep this rhythm. One more round.`,
+      sug_endless_more: `A few more questions will make the score meaningful.`,
+      sug_endless_raise: `You're at {percent}% — try endless at {next} back?`,
+      sug_endless_max: `5-back endless, still solid. Devil-tier.`,
+      sug_endless_lower: `Drop to {next} back and rebuild your rhythm.`,
+      sug_endless_digits_down: `2-digit is heavy — go back to 1-digit for rhythm?`,
+      sug_endless_ops_down: `Try endless with + − first.`,
+      sug_endless_slow: `Slow down — accuracy beats speed.`,
+      sug_endless_default: `One more run — see how long your streak goes.`
+    }
+  };
+
+  function t(key, vars) {
+    const table = I18N[app.language] || I18N.zh;
+    let text = table[key];
+    if (text === undefined) text = I18N.zh[key];
+    if (text === undefined) return key;
+    if (vars) {
+      text = text.replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match
+      ));
+    }
+    return text;
+  }
+
+  function formatNumber(value) {
+    const number = Number(value) || 0;
+    return app.language === 'en' ? number.toLocaleString('en-US') : String(number);
+  }
+
+  let storageOK = true;
+
+  function readStore() {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(STORAGE_KEY);
+    } catch (error) {
+      storageOK = false;
+      return E.sanitizeStore(null);
+    }
+    if (!raw) return E.sanitizeStore(null);
+    try {
+      return E.sanitizeStore(JSON.parse(raw));
+    } catch (error) {
+      return E.sanitizeStore(null);
+    }
+  }
+
+  function detectTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
+    } catch (error) {
+      return 'light';
+    }
+  }
+
+  const initial = readStore();
+  const app = {
+    settings: initial.settings,
+    theme: initial.theme || detectTheme(),
+    language: initial.language === 'en' ? 'en' : 'zh',
+    setupMode: initial.setupMode,
+    sessions: initial.sessions,
+    storageOK,
+    game: null,
+    screen: 'home',
+    starting: false,
+    lastResult: null,
+    lastMode: 'normal',
+    suggestionConfig: null,
+    suggestionMode: 'normal',
+    clearArmed: false,
+    clearTimer: null,
+    toastTimer: null,
+    nudgeTimer: null,
+    countdownToken: 0
+  };
+  app.storageOK = storageOK;
+
+  function persist() {
+    if (!app.storageOK) return false;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: 1,
+        settings: app.settings,
+        theme: app.theme,
+        language: app.language,
+        setupMode: app.setupMode,
+        sessions: app.sessions
+      }));
+      return true;
+    } catch (error) {
+      markStorageFailed();
+      return false;
+    }
+  }
+
+  function markStorageFailed() {
+    if (!app.storageOK) return;
+    app.storageOK = false;
+    updateBestNote();
+    toast(t('storage_fail'));
+  }
+
+  function updateLanguageButton() {
+    const button = $('lang-btn');
+    if (!button) return;
+    const label = t(app.language === 'zh' ? 'lang_switch_en' : 'lang_switch_zh');
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  }
+
+  function updateThemeButtons() {
+    const target = app.theme === 'dark' ? 'light' : 'dark';
+    const label = t(target === 'dark' ? 'theme_dark_aria' : 'theme_light_aria');
+    document.querySelectorAll('#theme-btn, #game-theme-btn').forEach((button) => {
+      button.setAttribute('aria-label', label);
+      button.title = label;
+    });
+  }
+
+  function updateMeta() {
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', t('meta_description'));
+  }
+
+  function updateDocumentTitle() {
+    document.title = t(`title_${app.screen}`);
+  }
+
+  function applyLanguage() {
+    document.documentElement.lang = app.language === 'en' ? 'en' : 'zh-CN';
+    document.documentElement.dataset.lang = app.language;
+
+    document.querySelectorAll('[data-i18n]').forEach((element) => {
+      element.textContent = t(element.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach((element) => {
+      element.innerHTML = t(element.dataset.i18nHtml);
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
+      element.setAttribute('aria-label', t(element.dataset.i18nAria));
+    });
+    document.querySelectorAll('#keypad [data-digit]').forEach((button) => {
+      button.setAttribute('aria-label', t('game_digit_aria', { digit: button.dataset.digit }));
+    });
+
+    updateLanguageButton();
+    updateThemeButtons();
+    updateMeta();
+    updateDocumentTitle();
+
+    if (app.screen === 'home') {
+      applySettingsUI();
+      applySetupModeUI();
+    } else if (app.screen === 'result' && app.lastResult) {
+      renderResult(app.lastResult);
+    }
+  }
+
+  function toggleLanguage() {
+    app.language = app.language === 'zh' ? 'en' : 'zh';
+    applyLanguage();
+    persist();
+  }
+
+  function applyTheme() {
+    document.documentElement.dataset.theme = app.theme;
+    document.documentElement.style.colorScheme = app.theme;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute('content', app.theme === 'dark' ? '#111827' : '#f3eee4');
+    }
+    updateThemeButtons();
+  }
+
+  function toggleTheme() {
+    app.theme = app.theme === 'dark' ? 'light' : 'dark';
+    applyTheme();
+    persist();
+  }
+
+  function applySettingsUI() {
+    const groups = [
+      { id: 'n-group', key: 'n', compare: (value) => Number(value) === app.settings.n },
+      { id: 'digits-group', key: 'digits', compare: (value) => Number(value) === app.settings.digits },
+      { id: 'ops-group', key: 'ops', compare: (value) => value === app.settings.ops }
+    ];
+
+    groups.forEach((group) => {
+      const buttons = document.querySelectorAll(`#${group.id} button[data-value]`);
+      buttons.forEach((button) => {
+        const checked = group.compare(button.dataset.value);
+        button.setAttribute('aria-checked', String(checked));
+        button.tabIndex = checked ? 0 : -1;
+      });
+    });
+
+    const hint = app.settings.n === 1
+      ? t('hint_back_1')
+      : app.settings.n === 2
+        ? t('hint_back_2')
+        : t('hint_back_n', { n: app.settings.n });
+    $('n-hint').textContent = hint;
+    updateBestNote();
+  }
+
+  function applySetupModeUI() {
+    const endless = app.setupMode === 'endless';
+    document.querySelectorAll('#mode-group [data-mode]').forEach((button) => {
+      const active = button.dataset.mode === app.setupMode;
+      button.setAttribute('aria-checked', String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    $('digits-field').hidden = endless;
+    $('endless-info').hidden = !endless;
+    $('round-badge').textContent = t(endless ? 'round_endless' : 'round_25');
+    $('start-label').textContent = t(endless ? 'start_endless' : 'start_normal');
+    $('setup-note').textContent = t(endless ? 'setup_note_endless' : 'setup_note_normal');
+    updateBestNote();
+  }
+
+  function updateBestNote() {
+    const note = $('best-note');
+    if (!note) return;
+
+    if (app.setupMode === 'endless') {
+      const best = E.findEndlessBest(app.sessions, {
+        n: app.settings.n,
+        digits: 1,
+        ops: app.settings.ops
+      });
+      let text = t('best_endless_none');
+      if (best) {
+        const percent = best.total > 0 ? Math.round((best.correct / best.total) * 100) : 0;
+        text = t('best_endless', { score: formatNumber(best.score), percent });
+      }
+      if (!app.storageOK) text += t('best_storage');
+      note.textContent = text;
+      return;
+    }
+
+    const best = E.findBest(app.sessions, app.settings, 'normal');
+    let text = t('best_none');
+    if (best) {
+      const percent = Math.round((best.correct / best.total) * 100);
+      const speed = best.avgMs > 0 ? t('best_speed', { avg: E.formatAverage(best.avgMs) }) : '';
+      text = t('best_normal', { percent, speed });
+    }
+    if (!app.storageOK) text += t('best_storage');
+    note.textContent = text;
+  }
+
+  function toast(message) {
+    const element = $('toast');
+    if (!element) return;
+    element.textContent = message;
+    element.classList.add('show');
+    clearTimeout(app.toastTimer);
+    app.toastTimer = setTimeout(() => {
+      element.classList.remove('show');
+    }, 1900);
+  }
+
+  function showScreen(name, focus) {
+    ['home', 'game', 'result'].forEach((key) => {
+      const screen = $(`screen-${key}`);
+      if (screen) screen.hidden = key !== name;
+    });
+    app.screen = name;
+    document.body.dataset.screen = name;
+    window.scrollTo(0, 0);
+    updateDocumentTitle();
+
+    if (focus !== false) {
+      const heading = name === 'game'
+        ? $('game-title')
+        : name === 'result'
+          ? $('result-title')
+          : $('home-title');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }
+  }
+
+  function buildSegments(session) {
+    if (!Number.isFinite(session.total)) {
+      $('segments').replaceChildren();
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (let index = 0; index < session.total; index += 1) {
+      const segment = document.createElement('span');
+      segment.className = 'seg';
+      fragment.append(segment);
+    }
+    $('segments').replaceChildren(fragment);
+  }
+
+  function prepareGameChrome() {
+    const game = app.game;
+    if (!game) return;
+    const session = game.session;
+    const endless = game.mode === 'endless';
+
+    $('screen-game').dataset.mode = game.mode;
+    $('game-config').textContent = endless
+      ? E.endlessLabel(game.config, true, app.language)
+      : E.configLabel(game.config, false, app.language);
+    $('progress-block').hidden = endless;
+    $('endless-hud').hidden = !endless;
+    $('endless-answered').textContent = '0';
+    $('endless-score').textContent = '0';
+    $('quit-label').textContent = t(endless ? 'game_quit_end' : 'game_quit_exit');
+    $('progress-text').textContent = endless
+      ? t('progress_endless', { answered: 0 })
+      : t('progress_normal', { answered: 0, total: session.total });
+    $('score-text').textContent = t('score', { score: 0 });
+    $('elapsed').textContent = '00:00';
+    $('streak').textContent = '0';
+    $('streak-wrap').classList.remove('hot', 'bump');
+    $('state-chip').dataset.mode = 'warm';
+    $('state-label').textContent = t('ready');
+    $('expression').textContent = '· · ·';
+    $('expression').setAttribute('aria-label', t('ready'));
+    $('expression-sub').textContent = t('ready_sub');
+    $('answer-label').textContent = t('first_question');
+    $('answer-value').textContent = '?';
+    $('answer-box').dataset.empty = 'true';
+    $('answer-box').classList.remove('is-correct', 'is-wrong', 'is-locked', 'is-nudge');
+    $('feedback-line').textContent = '';
+    $('feedback-line').className = 'feedback-line';
+    $('feedback-line').hidden = true;
+    $('warm-actions').hidden = true;
+    $('keypad').hidden = true;
+    $('correction').hidden = true;
+    $('correction-bar').classList.remove('run');
+    $('interaction').classList.remove('is-memory');
+    setKeypadDisabled(false);
+    clearEndlessButtonStates();
+    buildSegments(session);
+  }
+
+  function renderExpression(question) {
+    const element = $('expression');
+    const first = document.createElement('span');
+    first.className = 'num';
+    first.textContent = String(question.a);
+    const operator = document.createElement('span');
+    operator.className = 'op';
+    operator.textContent = question.symbol;
+    const second = document.createElement('span');
+    second.className = 'num';
+    second.textContent = String(question.b);
+    element.replaceChildren(first, operator, second);
+    element.setAttribute('aria-label', E.questionLabel(question, app.language));
+  }
+
+  function renderQuestion() {
+    const game = app.game;
+    if (!game) return;
+    const session = game.session;
+    if (session.phase === 'done') return;
+    const question = session.current;
+    if (!question) return;
+
+    const warmup = session.phase === 'warmup';
+    const endless = game.mode === 'endless';
+    renderExpression(question);
+
+    $('state-chip').dataset.mode = warmup ? 'warm' : 'answer';
+    const prompt = E.statusText(session.n, app.language);
+    if (warmup) {
+      $('state-label').textContent = t('state_warm', {
+        current: session.warmupDone + 1,
+        n: session.n
+      });
+      $('expression-sub').textContent = t('sub_warm');
+    } else {
+      $('state-label').textContent = t('state_answer', { prompt });
+      $('expression-sub').textContent = endless
+        ? t('sub_answer_endless')
+        : t('sub_answer_normal');
+    }
+    $('answer-label').textContent = warmup ? t('answer_keep') : prompt;
+
+    const box = $('answer-box');
+    box.classList.remove('is-correct', 'is-wrong', 'is-nudge');
+    box.classList.toggle('is-locked', warmup);
+    box.dataset.empty = 'true';
+    box.setAttribute(
+      'aria-label',
+      warmup ? t('answer_aria_warm') : t('answer_aria_prompt', { prompt })
+    );
+    $('answer-value').textContent = '?';
+
+    const line = $('feedback-line');
+    line.textContent = warmup || !endless ? '' : t('tap_hint');
+    line.className = 'feedback-line';
+    line.hidden = warmup;
+
+    $('warm-actions').hidden = !warmup;
+    $('keypad').hidden = warmup;
+    $('correction').hidden = true;
+    $('correction-bar').classList.remove('run');
+    $('interaction').classList.toggle('is-memory', warmup);
+    setKeypadDisabled(false);
+    clearEndlessButtonStates();
+
+    if (warmup) {
+      const dots = $('memory-dots');
+      dots.replaceChildren();
+      for (let index = 0; index < session.n; index += 1) {
+        const dot = document.createElement('i');
+        if (index < session.warmupDone) dot.className = 'done';
+        dots.append(dot);
+      }
+      const lastWarmup = session.warmupDone >= session.n - 1;
+      const arrow = document.createElement('span');
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '→';
+      $('memorize-btn').replaceChildren(
+        document.createTextNode(`${t(lastWarmup ? 'memorize_start' : 'memorize_next')} `),
+        arrow
+      );
+    }
+
+    renderProgress();
+    renderScore(false);
+    game.questionAt = game.startedAt ? performance.now() : 0;
+    animateExpression();
+  }
+
+  function animateExpression() {
+    const element = $('expression');
+    element.classList.remove('swap');
+    void element.offsetWidth;
+    element.classList.add('swap');
+  }
+
+  function renderProgress() {
+    const game = app.game;
+    if (!game) return;
+    const session = game.session;
+
+    if (game.mode === 'endless') {
+      $('endless-answered').textContent = String(session.answered);
+      $('endless-score').textContent = formatNumber(session.score);
+      $('progress-text').textContent = t('progress_endless', { answered: session.answered });
+      $('score-text').textContent = t('score', { score: formatNumber(session.score) });
+      return;
+    }
+
+    const segments = $('segments').children;
+    for (let index = 0; index < session.total; index += 1) {
+      const segment = segments[index];
+      if (!segment) continue;
+      let className = 'seg';
+      if (index < session.results.length) {
+        className += session.results[index].correct ? ' done' : ' wrong';
+      } else if (session.phase === 'answer' && index === session.results.length) {
+        className += ' current';
+      }
+      segment.className = className;
+    }
+    $('progress-text').textContent = t('progress_normal', {
+      answered: session.answered,
+      total: session.total
+    });
+    $('score-text').textContent = t('score', { score: formatNumber(session.score) });
+  }
+
+  function renderScore(bump) {
+    const game = app.game;
+    if (!game) return;
+    const session = game.session;
+    const streakWrap = $('streak-wrap');
+    $('streak').textContent = String(session.streak);
+    streakWrap.classList.toggle('hot', session.streak > 0);
+
+    if (game.mode === 'endless') {
+      $('endless-score').textContent = formatNumber(session.score);
+      if (bump) {
+        const endlessScore = $('endless-score');
+        endlessScore.classList.remove('bump');
+        void endlessScore.offsetWidth;
+        endlessScore.classList.add('bump');
+      }
+    }
+
+    if (bump) {
+      const score = $('score-text');
+      score.classList.remove('bump');
+      void score.offsetWidth;
+      score.classList.add('bump');
+      streakWrap.classList.remove('bump');
+      void streakWrap.offsetWidth;
+      streakWrap.classList.add('bump');
+    }
+  }
+
+  function renderInput() {
+    const game = app.game;
+    if (!game) return;
+    const value = game.input;
+    $('answer-value').textContent = value || '?';
+    $('answer-box').dataset.empty = value ? 'false' : 'true';
+  }
+
+  function setKeypadDisabled(disabled) {
+    const keypad = $('keypad');
+    keypad.classList.toggle('is-disabled', disabled);
+    keypad.querySelectorAll('button').forEach((button) => {
+      button.disabled = disabled;
+    });
+  }
+
+  function clearEndlessButtonStates() {
+    $('keypad').querySelectorAll('[data-digit]').forEach((button) => {
+      button.classList.remove('is-correct', 'is-wrong', 'is-answer');
+    });
+  }
+
+  function shakeAnswer(message) {
+    const line = $('feedback-line');
+    if (message) {
+      line.textContent = message;
+      line.className = 'feedback-line nudge';
+    }
+    const box = $('answer-box');
+    box.classList.remove('is-nudge');
+    void box.offsetWidth;
+    box.classList.add('is-nudge');
+    clearTimeout(app.nudgeTimer);
+    app.nudgeTimer = setTimeout(() => {
+      box.classList.remove('is-nudge');
+    }, 440);
+  }
+
+  function pressDigit(digit) {
+    const game = app.game;
+    if (!game || !game.startedAt || game.session.phase !== 'answer' || game.submitting) return;
+    if (game.mode === 'endless') {
+      submitEndlessDigit(digit);
+      return;
+    }
+    if (game.mode !== 'normal') return;
+    const maxDigits = E.maxInputDigits(game.config);
+    if (game.input === '0') game.input = '';
+    if (game.input.length >= maxDigits) {
+      shakeAnswer('');
+      return;
+    }
+    game.input += digit;
+    const line = $('feedback-line');
+    if (line.classList.contains('nudge')) {
+      line.textContent = '';
+      line.className = 'feedback-line';
+    }
+    renderInput();
+  }
+
+  function backspace() {
+    const game = app.game;
+    if (!game || game.mode !== 'normal' || !game.startedAt || game.session.phase !== 'answer' || game.submitting) return;
+    if (!game.input) return;
+    game.input = game.input.slice(0, -1);
+    renderInput();
+  }
+
+  function submitAnswer() {
+    const game = app.game;
+    if (!game || game.mode !== 'normal' || !game.startedAt || game.session.phase !== 'answer' || game.submitting) return;
+    if (!game.input) {
+      shakeAnswer(t('nudge_input'));
+      return;
+    }
+
+    game.submitting = true;
+    const value = Number(game.input);
+    const responseMs = game.questionAt ? performance.now() - game.questionAt : 0;
+    const result = game.session.submit(value, responseMs);
+    game.input = '';
+    if (game.session.answered >= game.session.total) {
+      game.endedAt = performance.now();
+    }
+
+    renderProgress();
+    renderScore(result.correct);
+
+    const box = $('answer-box');
+    box.classList.remove('is-locked', 'is-nudge', 'is-correct', 'is-wrong');
+    box.classList.add(result.correct ? 'is-correct' : 'is-wrong');
+    box.dataset.empty = 'false';
+    $('answer-value').textContent = String(value);
+
+    const line = $('feedback-line');
+    if (result.correct) {
+      line.textContent = game.session.streak >= 3
+        ? t('feedback_correct_streak', { streak: game.session.streak })
+        : t('feedback_correct');
+      line.className = 'feedback-line correct';
+      setKeypadDisabled(true);
+      game.correctTimer = setTimeout(() => {
+        if (!app.game || app.game !== game) return;
+        setKeypadDisabled(false);
+        advanceAfterFeedback();
+      }, 640);
+    } else {
+      line.textContent = t('feedback_wrong', { answer: result.targetAnswer });
+      line.className = 'feedback-line wrong';
+      showCorrection(result);
+    }
+    game.submitting = false;
+  }
+
+  function submitEndlessDigit(rawDigit) {
+    const game = app.game;
+    if (!game || game.mode !== 'endless' || !game.startedAt || game.session.phase !== 'answer' || game.submitting) return;
+    const digit = Number(rawDigit);
+    if (!Number.isInteger(digit) || digit < 0 || digit > 9) return;
+
+    game.submitting = true;
+    const responseMs = game.questionAt ? performance.now() - game.questionAt : 0;
+    const result = game.session.submit(digit, responseMs);
+    game.submitting = false;
+
+    renderProgress();
+    renderScore(result.correct);
+
+    const keypad = $('keypad');
+    clearEndlessButtonStates();
+    const tapped = keypad.querySelector(`[data-digit="${digit}"]`);
+    if (tapped) tapped.classList.add(result.correct ? 'is-correct' : 'is-wrong');
+    if (!result.correct) {
+      const correctButton = keypad.querySelector(`[data-digit="${result.targetAnswer}"]`);
+      if (correctButton) correctButton.classList.add('is-answer');
+    }
+
+    const line = $('feedback-line');
+    if (result.correct) {
+      line.textContent = game.session.streak >= 3
+        ? t('feedback_correct_streak', { streak: game.session.streak })
+        : t('feedback_correct');
+      line.className = 'feedback-line correct';
+    } else {
+      line.textContent = t('feedback_endless_wrong', {
+        answer: result.targetAnswer,
+        text: result.targetText
+      });
+      line.className = 'feedback-line wrong';
+    }
+
+    setKeypadDisabled(true);
+    clearTimeout(game.endlessTimer);
+    game.endlessTimer = setTimeout(() => {
+      if (app.game !== game) return;
+      advanceAfterFeedback();
+    }, result.correct ? 300 : 1050);
+  }
+
+  function showCorrection(result) {
+    const game = app.game;
+    if (!game) return;
+    game.correctionOpen = true;
+    $('keypad').hidden = true;
+    $('correction').hidden = false;
+    $('correct-answer').textContent = String(result.targetAnswer);
+    $('wrong-input').textContent = t('wrong_input', { value: result.value });
+    $('correct-question').textContent = `${result.targetText} = ${result.targetAnswer}`;
+
+    const bar = $('correction-bar');
+    bar.classList.remove('run');
+    void bar.offsetWidth;
+    bar.classList.add('run');
+
+    clearTimeout(game.wrongTimer);
+    game.wrongTimer = setTimeout(() => {
+      if (app.game === game) continueAfterWrong();
+    }, 3200);
+  }
+
+  function continueAfterWrong() {
+    const game = app.game;
+    if (!game || !game.correctionOpen) return;
+    game.correctionOpen = false;
+    clearTimeout(game.wrongTimer);
+    $('correction').hidden = true;
+    $('correction-bar').classList.remove('run');
+    advanceAfterFeedback();
+  }
+
+  function advanceAfterFeedback() {
+    const game = app.game;
+    if (!game || game.session.phase !== 'feedback') return;
+    const phase = game.session.advance();
+    if (phase === 'done') {
+      if (game.mode === 'endless') finishEndless();
+      else finishRound();
+      return;
+    }
+    renderQuestion();
+  }
+
+  function memorizeCurrent() {
+    const game = app.game;
+    if (!game || !game.startedAt || game.session.phase !== 'warmup') return;
+    game.session.memorize();
+    renderQuestion();
+  }
+
+  function startClock(game) {
+    if (game.clockId) clearInterval(game.clockId);
+    const update = () => {
+      if (app.game !== game) return;
+      $('elapsed').textContent = E.formatDuration(performance.now() - game.startedAt);
+    };
+    update();
+    game.clockId = setInterval(update, 500);
+  }
+
+  function clearGameTimers(game) {
+    if (!game) return;
+    if (game.clockId) {
+      clearInterval(game.clockId);
+      game.clockId = null;
+    }
+    if (game.correctTimer) {
+      clearTimeout(game.correctTimer);
+      game.correctTimer = null;
+    }
+    if (game.wrongTimer) {
+      clearTimeout(game.wrongTimer);
+      game.wrongTimer = null;
+    }
+    if (game.endlessTimer) {
+      clearTimeout(game.endlessTimer);
+      game.endlessTimer = null;
+    }
+  }
+
+  function startRound(rawConfig, mode) {
+    if (app.starting) return Promise.resolve();
+    app.starting = true;
+    closeDialogs();
+
+    try {
+      if (app.game) clearGameTimers(app.game);
+      const gameMode = mode === 'endless' ? 'endless' : 'normal';
+      let config;
+
+      if (gameMode === 'endless') {
+        const base = E.normalizeConfig(rawConfig || app.settings);
+        config = { n: base.n, digits: 1, ops: base.ops };
+        app.settings = E.normalizeConfig({ ...app.settings, n: base.n, ops: base.ops });
+        app.setupMode = 'endless';
+        applySettingsUI();
+        applySetupModeUI();
+        persist();
+      } else {
+        config = E.normalizeConfig(rawConfig || app.settings);
+        app.settings = config;
+        app.setupMode = 'normal';
+        applySettingsUI();
+        applySetupModeUI();
+        persist();
+      }
+
+      const session = new E.GameSession(
+        config,
+        gameMode === 'endless' ? Number.POSITIVE_INFINITY : E.TOTAL_QUESTIONS,
+        undefined,
+        { endless: gameMode === 'endless' }
+      );
+      const game = {
+        mode: gameMode,
+        session,
+        config,
+        input: '',
+        startedAt: 0,
+        questionAt: 0,
+        endedAt: 0,
+        clockId: null,
+        correctTimer: null,
+        wrongTimer: null,
+        endlessTimer: null,
+        correctionOpen: false,
+        submitting: false
+      };
+      app.game = game;
+      const token = ++app.countdownToken;
+
+      showScreen('game');
+      prepareGameChrome();
+
+      return runCountdown(token).then(() => {
+        if (token !== app.countdownToken || app.game !== game) {
+          app.starting = false;
+          return;
+        }
+        const now = performance.now();
+        game.startedAt = now;
+        game.questionAt = now;
+        startClock(game);
+        renderQuestion();
+        app.starting = false;
+      });
+    } catch (error) {
+      console.error(error);
+      app.starting = false;
+      app.game = null;
+      showScreen('home');
+      toast(t('start_fail'));
+      return Promise.resolve();
+    }
+  }
+
+  function runCountdown(token) {
+    return new Promise((resolve) => {
+      const overlay = $('countdown');
+      const number = $('count-num');
+      const message = $('count-msg');
+      const count = app.game ? app.game.config.n : app.settings.n;
+      const endless = app.game && app.game.mode === 'endless';
+
+      message.textContent = endless
+        ? t(count === 1 ? 'countdown_endless_one' : 'countdown_endless', { count })
+        : t(count === 1 ? 'countdown_normal_one' : 'countdown_normal', { count });
+      overlay.hidden = false;
+      overlay.classList.remove('out');
+
+      let step = 0;
+      const tick = () => {
+        if (token !== app.countdownToken) {
+          resolve();
+          return;
+        }
+        if (step < 3) {
+          number.textContent = ['3', '2', '1'][step];
+          number.classList.remove('tick');
+          void number.offsetWidth;
+          number.classList.add('tick');
+          step += 1;
+          setTimeout(tick, 620);
+          return;
+        }
+
+        number.textContent = t('countdown_go');
+        number.classList.remove('tick');
+        void number.offsetWidth;
+        number.classList.add('tick');
+        setTimeout(() => {
+          if (token !== app.countdownToken) {
+            resolve();
+            return;
+          }
+          overlay.classList.add('out');
+          setTimeout(() => {
+            if (token !== app.countdownToken) {
+              resolve();
+              return;
+            }
+            overlay.hidden = true;
+            overlay.classList.remove('out');
+            resolve();
+          }, 260);
+        }, 440);
+      };
+
+      tick();
+    });
+  }
+
+  function finishRound() {
+    const game = app.game;
+    if (!game) return;
+    const session = game.session;
+    clearGameTimers(game);
+
+    const endedAt = game.endedAt || performance.now();
+    const durationMs = Math.max(0, endedAt - game.startedAt);
+    const totalResponseMs = session.results.reduce((sum, result) => sum + result.responseMs, 0);
+    const avgMs = session.results.length
+      ? Math.round(totalResponseMs / session.results.length)
+      : 0;
+    const record = {
+      ts: Date.now(),
+      mode: 'normal',
+      n: session.n,
+      digits: session.digits,
+      ops: session.ops,
+      correct: session.correct,
+      total: session.total,
+      score: session.score,
+      bestStreak: session.bestStreak,
+      avgMs,
+      durationMs
+    };
+
+    const bestBefore = E.findBest(app.sessions, record, 'normal');
+    const bestAvg = bestBefore && bestBefore.avgMs > 0 ? bestBefore.avgMs : Infinity;
+    const isRecord = !bestBefore
+      || record.correct > bestBefore.correct
+      || (record.correct === bestBefore.correct && record.avgMs < bestAvg);
+
+    app.sessions.push(record);
+    if (app.sessions.length > E.MAX_SESSIONS) {
+      app.sessions = app.sessions.slice(-E.MAX_SESSIONS);
+    }
+    persist();
+
+    const data = {
+      record,
+      isRecord,
+      results: session.results.slice(),
+      rank: E.rankFor(record.correct, record.total),
+      mode: 'normal'
+    };
+    app.lastResult = data;
+    app.lastMode = 'normal';
+    app.game = null;
+
+    renderResult(data);
+    showScreen('result');
+    updateBestNote();
+  }
+
+  function finishEndless() {
+    const game = app.game;
+    if (!game || game.mode !== 'endless') return;
+    const session = game.session;
+    clearGameTimers(game);
+
+    if (session.answered === 0) {
+      session.end();
+      app.game = null;
+      showScreen('home');
+      updateBestNote();
+      toast(t('no_answers'));
+      return;
+    }
+
+    const endedAt = game.endedAt || performance.now();
+    const durationMs = Math.max(0, endedAt - game.startedAt);
+    const totalResponseMs = session.results.reduce((sum, result) => sum + result.responseMs, 0);
+    const avgMs = session.results.length
+      ? Math.round(totalResponseMs / session.results.length)
+      : 0;
+    const answered = session.answered;
+    const record = {
+      ts: Date.now(),
+      mode: 'endless',
+      n: session.n,
+      digits: 1,
+      ops: session.ops,
+      correct: session.correct,
+      total: answered,
+      score: session.score,
+      bestStreak: session.bestStreak,
+      avgMs,
+      durationMs
+    };
+    session.end();
+
+    const bestBefore = E.findEndlessBest(app.sessions, {
+      n: session.n,
+      digits: 1,
+      ops: session.ops
+    });
+    const accuracy = answered > 0 ? session.correct / answered : 0;
+    const bestAccuracy = bestBefore && bestBefore.total > 0
+      ? bestBefore.correct / bestBefore.total
+      : 0;
+    const bestSpeed = bestBefore && bestBefore.avgMs > 0 ? bestBefore.avgMs : Infinity;
+    const isRecord = !bestBefore
+      || record.score > bestBefore.score
+      || (record.score === bestBefore.score && accuracy > bestAccuracy)
+      || (record.score === bestBefore.score && accuracy === bestAccuracy && record.avgMs < bestSpeed);
+
+    app.sessions.push(record);
+    if (app.sessions.length > E.MAX_SESSIONS) {
+      app.sessions = app.sessions.slice(-E.MAX_SESSIONS);
+    }
+    persist();
+
+    const data = {
+      record,
+      isRecord,
+      results: session.results.slice(),
+      rank: E.rankFor(record.correct, record.total),
+      mode: 'endless'
+    };
+    app.lastResult = data;
+    app.lastMode = 'endless';
+    app.game = null;
+
+    renderResult(data);
+    showScreen('result');
+    updateBestNote();
+  }
+
+  function resultTitle(rank) {
+    const key = `result_title_normal_${rank}`;
+    return t(I18N[app.language] && I18N[app.language][key] ? key : 'result_title_normal_B');
+  }
+
+  function endlessResultTitle(rank, record) {
+    if (record.bestStreak >= 20) return t('result_title_endless_streak');
+    const key = `result_title_endless_${rank}`;
+    return t(I18N[app.language] && I18N[app.language][key] ? key : 'result_title_endless_C');
+  }
+
+  function buildSuggestion(record, percent) {
+    const { n, digits, ops } = record;
+    if (percent >= 90 && n < 5) {
+      return {
+        text: t('sug_normal_raise', { percent, next: n + 1 }),
+        label: t('sug_label_raise', { next: n + 1 }),
+        config: { n: n + 1, digits, ops }
+      };
+    }
+    if (percent >= 90 && n === 5 && digits === 1) {
+      return {
+        text: t('sug_normal_2digit'),
+        label: t('sug_label_2digit'),
+        config: { n, digits: 2, ops }
+      };
+    }
+    if (percent >= 90 && n === 5 && digits === 2) {
+      return {
+        text: t('sug_normal_max'),
+        label: '',
+        config: null
+      };
+    }
+    if (percent < 60 && n > 1) {
+      return {
+        text: t('sug_normal_lower', { next: n - 1 }),
+        label: t('sug_label_lower', { next: n - 1 }),
+        config: { n: n - 1, digits, ops }
+      };
+    }
+    if (percent < 60 && digits === 2) {
+      return {
+        text: t('sug_normal_digits_down'),
+        label: t('sug_label_digits_down'),
+        config: { n, digits: 1, ops }
+      };
+    }
+    if (percent < 60 && ops === 'all') {
+      return {
+        text: t('sug_normal_ops_down'),
+        label: t('sug_label_ops_down'),
+        config: { n, digits, ops: 'addsub' }
+      };
+    }
+    if (percent === 100) {
+      return {
+        text: t('sug_normal_perfect'),
+        label: '',
+        config: null
+      };
+    }
+    if (percent < 60) {
+      return {
+        text: t('sug_normal_slow'),
+        label: '',
+        config: null
+      };
+    }
+    if (percent >= 90) {
+      return {
+        text: t('sug_normal_steady'),
+        label: '',
+        config: null
+      };
+    }
+    return {
+      text: t('sug_normal_default'),
+      label: '',
+      config: null
+    };
+  }
+
+  function buildEndlessSuggestion(record, percent) {
+    const { n, ops, total } = record;
+    if (total < 8) {
+      return {
+        text: t('sug_endless_more'),
+        label: '',
+        config: null
+      };
+    }
+    if (percent >= 90 && n < 5) {
+      return {
+        text: t('sug_endless_raise', { percent, next: n + 1 }),
+        label: t('sug_label_raise', { next: n + 1 }),
+        config: { n: n + 1, digits: 1, ops }
+      };
+    }
+    if (percent >= 90 && n === 5) {
+      return {
+        text: t('sug_endless_max'),
+        label: '',
+        config: null
+      };
+    }
+    if (percent < 60 && n > 1) {
+      return {
+        text: t('sug_endless_lower', { next: n - 1 }),
+        label: t('sug_label_lower', { next: n - 1 }),
+        config: { n: n - 1, digits: 1, ops }
+      };
+    }
+    if (percent < 60 && ops === 'all') {
+      return {
+        text: t('sug_endless_ops_down'),
+        label: t('sug_label_ops_down'),
+        config: { n, digits: 1, ops: 'addsub' }
+      };
+    }
+    if (percent < 60) {
+      return {
+        text: t('sug_endless_slow'),
+        label: '',
+        config: null
+      };
+    }
+    return {
+      text: t('sug_endless_default'),
+      label: '',
+      config: null
+    };
+  }
+
+  function backTag(n) {
+    return app.language === 'en' ? `${n}-back` : `${n}-回溯`;
+  }
+
+  function digitsTag(digits) {
+    return t(digits === 2 ? 'digits_2' : 'digits_1');
+  }
+
+  function opsTag(ops) {
+    return t(ops === 'all' ? 'ops_all' : 'ops_addsub');
+  }
+
+  function renderResult(data) {
+    const { record, isRecord, results, rank } = data;
+    const endless = data.mode === 'endless';
+    const percent = record.total > 0
+      ? Math.round((record.correct / record.total) * 100)
+      : 0;
+
+    app.lastMode = endless ? 'endless' : 'normal';
+    app.suggestionMode = app.lastMode;
+
+    $('result-eyebrow-text').textContent = t(endless ? 'result_eyebrow_endless' : 'result_eyebrow_normal');
+    $('result-title').textContent = endless
+      ? endlessResultTitle(rank, record)
+      : resultTitle(rank);
+
+    const config = $('result-config');
+    config.replaceChildren();
+    const chips = endless
+      ? [t('game_hud_label'), backTag(record.n), opsTag(record.ops)]
+      : [backTag(record.n), digitsTag(record.digits), opsTag(record.ops)];
+    chips.forEach((text) => {
+      const chip = document.createElement('span');
+      chip.textContent = text;
+      config.append(chip);
+    });
+
+    const medal = $('medal');
+    medal.dataset.rank = rank;
+    medal.style.setProperty('--acc', `${percent}%`);
+    $('rank-letter').textContent = rank;
+    $('accuracy-value').textContent = `${percent}%`;
+    $('score-value').textContent = formatNumber(record.score);
+    $('new-best').hidden = !isRecord;
+    $('score-note').textContent = t(endless ? 'result_score_note_endless' : 'result_score_note_normal');
+    $('stat-correct').textContent = `${record.correct} / ${record.total}`;
+    $('stat-streak').textContent = String(record.bestStreak);
+    $('stat-avg').textContent = E.formatAverage(record.avgMs);
+    $('stat-time').textContent = E.formatDuration(record.durationMs);
+    $('play-again-label').textContent = t(endless ? 'result_play_endless' : 'result_play_again');
+    $('result-foot').textContent = t(endless ? 'result_foot_endless' : 'result_foot_normal');
+
+    const pattern = $('result-pattern');
+    pattern.replaceChildren();
+    const patternResults = endless ? results.slice(-60) : results;
+    const patternOffset = results.length - patternResults.length;
+    const labels = [];
+    patternResults.forEach((result, index) => {
+      const questionNumber = patternOffset + index + 1;
+      const item = document.createElement('i');
+      item.className = result.correct ? 'ok' : 'bad';
+      const verdict = t(result.correct ? 'pattern_correct' : 'pattern_wrong');
+      item.title = t('pattern_item_title', { n: questionNumber, result: verdict });
+      pattern.append(item);
+      if (!endless) {
+        labels.push(t('pattern_item_label', { n: questionNumber, result: verdict }));
+      }
+    });
+    $('pattern-legend').textContent = endless && results.length > 60
+      ? t('pattern_legend_long', { count: patternResults.length })
+      : t('pattern_legend_short');
+    pattern.setAttribute(
+      'aria-label',
+      endless
+        ? t('pattern_aria_endless', {
+          total: results.length,
+          shown: patternResults.length,
+          correct: record.correct
+        })
+        : t('pattern_aria_normal', {
+          total: results.length,
+          labels: labels.join(app.language === 'en' ? ', ' : '，')
+        })
+    );
+
+    const suggestion = endless
+      ? buildEndlessSuggestion(record, percent)
+      : buildSuggestion(record, percent);
+    $('suggestion-text').textContent = suggestion.text;
+    const action = $('suggestion-action');
+    if (suggestion.config) {
+      app.suggestionConfig = suggestion.config;
+      action.hidden = false;
+      action.textContent = `${suggestion.label} →`;
+    } else {
+      app.suggestionConfig = null;
+      action.hidden = true;
+    }
+  }
+
+  function openHistory() {
+    resetClearButton();
+    renderHistory();
+    const dialog = $('history-dialog');
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function renderHistory() {
+    const list = $('history-list');
+    list.replaceChildren();
+    const sessions = app.sessions.slice().sort((a, b) => b.ts - a.ts);
+
+    $('history-sub').textContent = sessions.length
+      ? t(sessions.length === 1 ? 'history_sub_count_one' : 'history_sub_count', { count: sessions.length })
+      : t('history_sub');
+    if (!app.storageOK) {
+      $('history-sub').textContent += t('history_storage');
+    }
+    $('clear-history').disabled = sessions.length === 0;
+
+    if (!sessions.length) {
+      const empty = document.createElement('div');
+      empty.className = 'history-empty';
+      const mark = document.createElement('div');
+      mark.className = 'empty-mark';
+      mark.textContent = '∅';
+      const title = document.createElement('b');
+      title.textContent = t('history_empty_title');
+      const copy = document.createElement('p');
+      copy.textContent = t('history_empty_copy');
+      empty.append(mark, title, copy);
+      list.append(empty);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    sessions.slice(0, 30).forEach((session) => {
+      const date = new Date(session.ts);
+      const endless = session.mode === 'endless';
+      const row = document.createElement('div');
+      row.className = 'record';
+
+      const dateBlock = document.createElement('div');
+      dateBlock.className = 'record-date';
+      const dateLine = document.createElement('b');
+      dateLine.textContent = `${pad2(date.getMonth() + 1)}.${pad2(date.getDate())}`;
+      const timeLine = document.createElement('span');
+      timeLine.textContent = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+      dateBlock.append(dateLine, timeLine);
+
+      const main = document.createElement('div');
+      main.className = 'record-main';
+      const config = document.createElement('div');
+      config.className = 'record-config';
+      config.textContent = endless
+        ? E.endlessLabel(session, true, app.language)
+        : E.configLabel(session, true, app.language);
+      const meta = document.createElement('div');
+      meta.className = 'record-meta';
+      meta.textContent = t('history_meta', {
+        correct: session.correct,
+        total: session.total,
+        streak: session.bestStreak,
+        avg: E.formatAverage(session.avgMs)
+      });
+      main.append(config, meta);
+
+      const result = document.createElement('div');
+      result.className = 'record-result';
+      const percent = session.total > 0
+        ? Math.round((session.correct / session.total) * 100)
+        : 0;
+      const accuracy = document.createElement('b');
+      accuracy.textContent = `${percent}%`;
+      if (percent < 60) accuracy.classList.add('low');
+      const score = document.createElement('span');
+      score.textContent = t('history_score', { score: formatNumber(session.score) });
+      result.append(accuracy, score);
+
+      row.append(dateBlock, main, result);
+      fragment.append(row);
+    });
+    list.append(fragment);
+  }
+
+  function resetClearButton() {
+    clearTimeout(app.clearTimer);
+    app.clearArmed = false;
+    const button = $('clear-history');
+    if (!button) return;
+    button.textContent = t('history_clear');
+    button.classList.remove('armed');
+  }
+
+  function handleClearHistory() {
+    if (!app.sessions.length) return;
+    const button = $('clear-history');
+    if (!app.clearArmed) {
+      app.clearArmed = true;
+      button.textContent = t('history_clear_confirm');
+      button.classList.add('armed');
+      clearTimeout(app.clearTimer);
+      app.clearTimer = setTimeout(resetClearButton, 3200);
+      return;
+    }
+
+    resetClearButton();
+    app.sessions = [];
+    persist();
+    renderHistory();
+    updateBestNote();
+    toast(t('history_cleared'));
+  }
+
+  function openHelp() {
+    const dialog = $('help-dialog');
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function openQuit() {
+    if (!app.game) return;
+    const game = app.game;
+    const session = game.session;
+    const endless = game.mode === 'endless';
+    const noAnswers = endless && session.answered === 0;
+
+    $('quit-kicker').textContent = t(endless ? 'quit_kicker_endless' : 'quit_kicker_normal');
+    $('quit-title').textContent = t(endless ? 'quit_title_endless' : 'quit_title_normal');
+    $('quit-text').textContent = noAnswers
+      ? t('quit_text_no_answers')
+      : endless
+        ? t('quit_text_endless', {
+          answered: session.answered,
+          score: formatNumber(session.score)
+        })
+        : t('quit_text_normal', {
+          answered: session.answered,
+          total: session.total
+        });
+    $('quit-confirm').textContent = noAnswers
+      ? t('quit_confirm_no')
+      : t(endless ? 'quit_confirm_endless' : 'quit_confirm_normal');
+    $('quit-cancel').textContent = t(endless ? 'quit_cancel_endless' : 'quit_cancel_normal');
+
+    const dialog = $('quit-dialog');
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function quitCurrentGame() {
+    app.countdownToken += 1;
+    const overlay = $('countdown');
+    overlay.hidden = true;
+    overlay.classList.remove('out');
+    clearGameTimers(app.game);
+    app.game = null;
+    app.starting = false;
+    const dialog = $('quit-dialog');
+    if (dialog.open) dialog.close();
+    showScreen('home');
+    toast(t('quit_exited'));
+  }
+
+  function closeDialogs() {
+    document.querySelectorAll('dialog[open]').forEach((dialog) => {
+      dialog.close();
+    });
+  }
+
+  function bindEvents() {
+    document.querySelectorAll('[data-setting]').forEach((group) => {
+      group.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-value]');
+        if (!button) return;
+        const key = group.dataset.setting;
+        const value = key === 'ops' ? button.dataset.value : Number(button.dataset.value);
+        app.settings = E.normalizeConfig({ ...app.settings, [key]: value });
+        applySettingsUI();
+        persist();
+      });
+
+      group.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        const buttons = Array.from(group.querySelectorAll('button[data-value]'));
+        const current = buttons.indexOf(document.activeElement);
+        if (current < 0) return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+        const next = buttons[(current + direction + buttons.length) % buttons.length];
+        next.focus();
+        next.click();
+      });
+    });
+
+    $('start-btn').addEventListener('click', () => {
+      if (app.setupMode === 'endless') startRound(null, 'endless');
+      else startRound(app.settings, 'normal');
+    });
+    $('play-again-btn').addEventListener('click', () => startRound(null, app.lastMode));
+    $('adjust-btn').addEventListener('click', () => {
+      app.setupMode = app.lastMode;
+      applySetupModeUI();
+      persist();
+      showScreen('home');
+    });
+    $('suggestion-action').addEventListener('click', () => {
+      if (app.suggestionConfig) startRound(app.suggestionConfig, app.suggestionMode);
+    });
+
+    document.querySelectorAll('#mode-group [data-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        app.setupMode = button.dataset.mode === 'endless' ? 'endless' : 'normal';
+        applySetupModeUI();
+        persist();
+      });
+    });
+
+    document.querySelector('#mode-group').addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const buttons = Array.from(document.querySelectorAll('#mode-group [data-mode]'));
+      const current = buttons.indexOf(document.activeElement);
+      if (current < 0) return;
+      event.preventDefault();
+      const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+      const next = buttons[(current + direction + buttons.length) % buttons.length];
+      next.focus();
+      next.click();
+    });
+
+    document.querySelectorAll('#theme-btn, #game-theme-btn').forEach((button) => {
+      button.addEventListener('click', toggleTheme);
+    });
+
+    $('lang-btn').addEventListener('click', toggleLanguage);
+
+    $('history-btn').addEventListener('click', openHistory);
+    $('result-history-btn').addEventListener('click', openHistory);
+    $('help-btn').addEventListener('click', openHelp);
+    $('guide-help-btn').addEventListener('click', openHelp);
+
+    $('brand-link').addEventListener('click', (event) => {
+      event.preventDefault();
+      if (app.screen === 'result') {
+        app.setupMode = app.lastMode;
+        applySetupModeUI();
+        showScreen('home');
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    $('quit-btn').addEventListener('click', openQuit);
+    $('quit-cancel').addEventListener('click', () => {
+      const dialog = $('quit-dialog');
+      if (dialog.open) dialog.close();
+    });
+    $('quit-confirm').addEventListener('click', () => {
+      if (app.game && app.game.mode === 'endless') {
+        const dialog = $('quit-dialog');
+        if (dialog.open) dialog.close();
+        finishEndless();
+      } else {
+        quitCurrentGame();
+      }
+    });
+
+    $('keypad').addEventListener('click', (event) => {
+      const digitButton = event.target.closest('button[data-digit]');
+      if (!digitButton) return;
+      pressDigit(digitButton.dataset.digit);
+      digitButton.blur();
+    });
+    $('backspace-btn').addEventListener('click', (event) => {
+      backspace();
+      event.currentTarget.blur();
+    });
+    $('submit-btn').addEventListener('click', (event) => {
+      submitAnswer();
+      event.currentTarget.blur();
+    });
+    $('memorize-btn').addEventListener('click', memorizeCurrent);
+    $('continue-btn').addEventListener('click', continueAfterWrong);
+
+    document.querySelectorAll('[data-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const dialog = button.closest('dialog');
+        if (dialog) dialog.close();
+      });
+    });
+
+    document.querySelectorAll('dialog').forEach((dialog) => {
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    });
+
+    $('history-dialog').addEventListener('close', resetClearButton);
+    $('clear-history').addEventListener('click', handleClearHistory);
+
+    document.addEventListener('keydown', (event) => {
+      if (document.querySelector('dialog[open]')) return;
+      if (app.screen !== 'game' || !app.game || !app.game.startedAt) return;
+
+      const focusedControl = event.target instanceof Element
+        ? event.target.closest('button, a, input, textarea, select')
+        : null;
+      if (focusedControl && (event.key === 'Enter' || event.key === ' ')) return;
+
+      const game = app.game;
+      const phase = game.session.phase;
+
+      if (phase === 'warmup') {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          memorizeCurrent();
+        }
+        return;
+      }
+
+      if (game.mode === 'endless') {
+        if (phase === 'answer' && /^\d$/.test(event.key)) {
+          event.preventDefault();
+          submitEndlessDigit(event.key);
+        }
+        return;
+      }
+
+      if (phase === 'answer') {
+        if (/^\d$/.test(event.key)) {
+          event.preventDefault();
+          pressDigit(event.key);
+          return;
+        }
+        if (event.key === 'Backspace') {
+          event.preventDefault();
+          backspace();
+          return;
+        }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          submitAnswer();
+        }
+        return;
+      }
+
+      if (phase === 'feedback' && game.correctionOpen) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          continueAfterWrong();
+        }
+      }
+    });
+  }
+
+  applyTheme();
+  applyLanguage();
+  applySettingsUI();
+  applySetupModeUI();
+  showScreen('home', false);
+  bindEvents();
+})();
+
+</script>
+</body>
+</html>

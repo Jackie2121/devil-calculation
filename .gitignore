@@ -1,0 +1,16 @@
+# local browser / test profiles
+.cdp-*
+.chrome-*
+
+# dependencies and logs
+node_modules/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# temporary files
+*.tmp
+*.bak
