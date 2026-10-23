@@ -3983,6 +3983,69 @@ html[data-theme] .guide-panel .example {
   display: block !important;
 }
 
+/* Home should fill the viewport height and use wide screens more fully. */
+#screen-home {
+  min-height: calc(100dvh - 66px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+#screen-home .home-intro {
+  align-self: center;
+}
+
+#screen-home .site-foot {
+  align-self: end;
+}
+
+@media (min-width: 1600px) {
+  .site-header,
+  .home {
+    width: min(1360px, calc(100% - 80px));
+  }
+
+  .home-intro {
+    grid-template-columns: minmax(0, 1.1fr) minmax(440px, 0.9fr);
+    gap: clamp(40px, 4vw, 80px);
+  }
+
+  .hero-copy {
+    max-width: 700px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(76px, 5.6vw, 88px);
+  }
+
+  html[data-lang="en"] .hero-copy h1 {
+    font-size: clamp(66px, 5vw, 80px);
+  }
+}
+
+@media (min-width: 2000px) {
+  .site-header,
+  .home {
+    width: min(1560px, calc(100% - 96px));
+  }
+
+  .home-intro {
+    grid-template-columns: minmax(0, 1.15fr) minmax(480px, 0.85fr);
+    gap: clamp(48px, 4vw, 96px);
+  }
+
+  .hero-copy {
+    max-width: 800px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(88px, 5.6vw, 104px);
+  }
+
+  html[data-lang="en"] .hero-copy h1 {
+    font-size: clamp(78px, 5vw, 92px);
+  }
+}
+
 </style>
 </head>
 <body data-screen="home">

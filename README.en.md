@@ -84,7 +84,7 @@ preview/           # desktop / mobile / dark-theme screenshots
 
 ## Browser
 
-A recent Chrome or Edge is recommended. The layout has been checked at 1440 / 390 / 320px.
+A recent Chrome or Edge is recommended. The layout has been checked at 1440 / 390 / 320px. On large windows the home screen fills the viewport, centers its content, and pins the footer to the bottom; at 2560×1229 there is no extra scroll and no one-sided gap below the content.
 
 ## License
 
