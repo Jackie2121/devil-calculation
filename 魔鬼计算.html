@@ -3861,6 +3861,124 @@ html[data-lang="en"] .hero-copy h1 {
   }
 }
 
+/* Simplified home: plain meta line, no redundant example cards, borderless guide */
+.hero-tags {
+  gap: 4px 0;
+  margin-top: 19px;
+  align-items: center;
+}
+
+html[data-theme] .hero-tags span {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.hero-tags span:not(:last-child)::after {
+  content: "·";
+  margin: 0 9px;
+  color: var(--muted-2);
+}
+
+html[data-theme] .hero-tags b {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+html[data-theme] .guide-panel.panel {
+  margin-top: 34px;
+  padding: 27px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.guide-panel .steps {
+  gap: 13px;
+}
+
+.guide-panel .steps li {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.guide-panel .step-num {
+  display: none;
+}
+
+html[data-theme] .guide-panel .example {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+}
+
+.guide-panel .example-head {
+  color: var(--muted);
+}
+
+.guide-panel .example-row {
+  border-bottom-color: var(--line);
+}
+
+.guide-panel .ex-tag {
+  color: var(--muted);
+}
+
+.guide-panel .ex-now .ex-q,
+.guide-panel .ex-now .ex-tag {
+  color: var(--accent);
+}
+
+.guide-panel .example-answer {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.guide-panel .example-answer span {
+  color: var(--muted);
+}
+
+.guide-panel .example-answer strong {
+  color: var(--accent);
+}
+
+@media (max-width: 470px) {
+  html[data-theme] .hero-tags span {
+    font-size: 9.5px;
+  }
+
+  .hero-tags span:not(:last-child)::after {
+    margin: 0 7px;
+  }
+
+  html[data-theme] .guide-panel.panel {
+    margin-top: 26px;
+    padding-top: 23px;
+  }
+}
+
+@media (max-width: 470px) {
+  .hero-tags span:last-child {
+    display: none;
+  }
+
+  .hero-tags span:nth-last-child(2)::after {
+    content: none;
+  }
+}
+
 </style>
 </head>
 <body data-screen="home">
@@ -3925,23 +4043,6 @@ html[data-lang="en"] .hero-copy h1 {
             <span data-i18n-html="tag_ops_html"><b>4</b> 种运算</span>
             <span data-i18n-html="tag_endless_html"><b>∞</b> 无尽 0–9</span>
             <span data-i18n-html="tag_offline_html"><b>0</b> 联网</span>
-          </div>
-
-          <div class="memory-strip" aria-hidden="true">
-            <div class="strip-card">
-              <span class="strip-q">3 + 4</span>
-              <span class="strip-tag" data-i18n="strip_q1">第 1 题 · 记住 7</span>
-            </div>
-            <span class="strip-arrow">→</span>
-            <div class="strip-card">
-              <span class="strip-q">9 − 5</span>
-              <span class="strip-tag" data-i18n="strip_q2">第 2 题 · 记住 4</span>
-            </div>
-            <span class="strip-arrow">→</span>
-            <div class="strip-card strip-card-now">
-              <span class="strip-q">6 × 3</span>
-              <span class="strip-tag" data-i18n-html="strip_a1_html">回答第 1 题 <b>7</b></span>
-            </div>
           </div>
         </div>
 
