@@ -144,7 +144,7 @@
             <p class="endless-info-text" data-i18n="endless_info">所有结果都在 0–9 之间。答题时直接点数字，立即提交；没有确认，也没有删除。数字范围设置不会影响本关。</p>
           </div>
 
-          <div class="field">
+          <div class="field" id="ops-field">
             <div class="field-head">
               <div class="field-title"><span class="field-index">03</span><span data-i18n="field_ops">运算类型</span></div>
               <span class="field-hint" data-i18n="hint_ops">加减，或四则混合</span>
@@ -207,11 +207,6 @@
         <div class="progress-block" id="progress-block">
           <div class="progress-line"><span id="progress-text">已答 0 / 25</span><span id="score-text">0 分</span></div>
           <div class="segments" id="segments" aria-hidden="true"></div>
-        </div>
-
-        <div class="endless-hud" id="endless-hud" hidden>
-          <span class="endless-hud-label"><span class="live-dot" aria-hidden="true"></span><span data-i18n="game_hud_label">无尽 · 0–9</span></span>
-          <span class="endless-hud-stats"><span><span data-i18n="hud_answered">已答</span> <b id="endless-answered">0</b></span><span><span data-i18n="hud_score">得分</span> <b id="endless-score">0</b></span></span>
         </div>
 
         <div class="play">

@@ -3952,3 +3952,7 @@ html[data-theme] .guide-panel .example {
     content: none;
   }
 }
+
+#screen-game[data-mode="endless"] .progress-block {
+  display: block !important;
+}

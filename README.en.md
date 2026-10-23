@@ -18,16 +18,17 @@ Open [`魔鬼计算.html`](魔鬼计算.html) in Chrome or Edge. No install, ser
 - Multi-digit input with delete and confirm keys
 - A wrong answer shows the old correction and then continues
 
-### Endless · 0–9
-- Every answer is fixed to **0–9**
+### Quick · 0–9
+- **20 questions per round**; every answer is fixed to **0–9**
+- Always uses **all four operations**; quick mode has no operation selector
 - A 3-column keypad with only 0–9; delete and confirm are hidden, and 0 is centered
-- **Tap a digit to submit immediately** — no confirm or delete; a wrong answer briefly shows the correct answer, then advances
-- Keep going until you stop; ending the run saves an endless result
-- Inherits the current back level and operation type
-- Live answered/score counters at the top
-- Endless records are stored and compared separately
+- A 20-question progress bar at the top; **tap a digit to submit immediately**
+- After 20 questions, the round is scored; an accuracy **strictly above 90%** (19/20 or 20/20) unlocks the next back level
+- Below that, stay at the current level and replay the round
+- Passing raises the setup back level by one (max 5); quitting early discards the round
+- Quick best records only include passing rounds; history keeps every completed round
 
-![Endless mode](preview/endless-en.png)
+![Quick mode](preview/quick-game-en.png)
 
 ## Chinese / English
 
@@ -47,7 +48,7 @@ Q3  6 × 3   → answer Q1: 7
 - Division is always exact
 - In 2-digit mode: +/− use two-digit operands; ×/÷ pair a two-digit number with a one-digit number
 - Untimed — go at your own pace
-- 100 points per correct answer; a normal round maxes out at 2,500
+- 100 points per correct answer; a normal round maxes out at 2,500, while a 20-question quick round maxes out at 2,000
 
 ## Light / dark
 

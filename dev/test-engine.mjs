@@ -292,8 +292,45 @@ test('endless records compare by score, then accuracy, then speed', () => {
   assert.equal(best.score, 4000);
   assert.equal(best.avgMs, 1500);
   assert.equal(E.findEndlessBest(sessions, { n: 5, digits: 1, ops: 'addsub' }), null);
-  assert.equal(E.endlessLabel(config), '无尽 · 0–9 · 2-回溯 · 加减乘除');
-  assert.equal(E.endlessLabel(config, true), '无尽 · 2回溯 · 四则');
+  assert.equal(E.endlessLabel(config), '快速 · 0–9 · 2-回溯 · 加减乘除');
+  assert.equal(E.endlessLabel(config, true), '快速 · 0–9 · 2回溯');
+});
+
+test('quick mode is a finite 20-question round', () => {
+  assert.equal(E.QUICK_TOTAL, 20);
+  const session = new E.GameSession({ n: 2, digits: 2, ops: 'addsub' }, E.QUICK_TOTAL, mulberry32(90210), {
+    endless: true,
+    finite: true
+  });
+  assert.equal(session.total, 20);
+  for (let i = 0; i < 2; i += 1) session.memorize();
+  for (let i = 0; i < E.QUICK_TOTAL; i += 1) {
+    assert.equal(session.phase, 'answer');
+    assert.ok(session.target);
+    assert.ok(session.target.answer >= 0 && session.target.answer <= 9);
+    session.submit(session.target.answer, 800);
+    session.advance();
+  }
+  assert.equal(session.phase, 'done');
+  assert.equal(session.answered, 20);
+  assert.equal(session.correct, 20);
+  assert.equal(session.score, 2000);
+});
+
+test('quick best only compares completed 20-question all-four rounds', () => {
+  const sessions = [
+    { mode: 'endless', n: 2, digits: 1, ops: 'all', total: 20, correct: 19, score: 1900, avgMs: 1200 },
+    { mode: 'endless', n: 2, digits: 1, ops: 'all', total: 20, correct: 20, score: 2000, avgMs: 2000 },
+    { mode: 'endless', n: 2, digits: 1, ops: 'all', total: 40, correct: 40, score: 4000, avgMs: 900 },
+    { mode: 'endless', n: 2, digits: 1, ops: 'addsub', total: 20, correct: 20, score: 2000, avgMs: 900 },
+    { mode: 'normal', n: 2, digits: 1, ops: 'all', total: 20, correct: 20, score: 2000, avgMs: 900 }
+  ];
+  const best = E.findQuickBest(sessions, { n: 2, digits: 2, ops: 'addsub' });
+  assert.equal(best.total, 20);
+  assert.equal(best.score, 2000);
+  assert.equal(best.avgMs, 2000);
+  assert.equal(E.findQuickBest(sessions, { n: 3, digits: 1, ops: 'all' }), null);
+  assert.equal(E.findQuickBest([{ mode: 'endless', n: 2, ops: 'all', total: 20, correct: 18, score: 1800, avgMs: 900 }], { n: 2 }), null);
 });
 
 test('rank thresholds match the UI contract', () => {
@@ -324,8 +361,8 @@ test('formatting helpers are stable', () => {
   assert.equal(E.configLabel({ n: 1, digits: 1, ops: 'addsub' }, true), '1回溯 · 1位 · 加减');
   assert.equal(E.configLabel({ n: 2, digits: 2, ops: 'all' }, false, 'en'), '2-back · 2-digit · all four');
   assert.equal(E.configLabel({ n: 1, digits: 1, ops: 'addsub' }, true, 'en'), '1-back · 1-digit · + −');
-  assert.equal(E.endlessLabel({ n: 2, digits: 1, ops: 'all' }, false, 'en'), 'Endless · 0–9 · 2-back · all four');
-  assert.equal(E.endlessLabel({ n: 3, digits: 1, ops: 'addsub' }, true, 'en'), 'Endless · 3-back · + −');
+  assert.equal(E.endlessLabel({ n: 2, digits: 1, ops: 'all' }, false, 'en'), 'Quick · 0–9 · 2-back · all four');
+  assert.equal(E.endlessLabel({ n: 3, digits: 1, ops: 'addsub' }, true, 'en'), 'Quick · 0–9 · 3-back');
   assert.equal(E.questionLabel({ a: 5, b: 2, op: '+' }, 'en'), '5 plus 2');
   assert.equal(E.questionLabel({ a: 9, b: 3, op: '/' }, 'en'), '9 divided by 3');
   assert.equal(E.maxInputDigits({ digits: 1 }), 2);

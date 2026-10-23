@@ -2,6 +2,7 @@
   'use strict';
 
   const TOTAL_QUESTIONS = 25;
+  const QUICK_TOTAL = 20;
   const MIN_N = 1;
   const MAX_N = 5;
   const MAX_SESSIONS = 40;
@@ -162,7 +163,10 @@
       this.digits = normalized.digits;
       this.ops = normalized.ops;
       this.endless = Boolean(options && options.endless);
-      this.total = this.endless ? Number.POSITIVE_INFINITY : clampInt(total, 1, 200, TOTAL_QUESTIONS);
+      this.finite = Boolean(options && options.finite);
+      this.total = this.endless && !this.finite
+        ? Number.POSITIVE_INFINITY
+        : clampInt(total, 1, 200, TOTAL_QUESTIONS);
       this.rng = typeof rng === 'function' ? rng : Math.random;
 
       this.history = [];
@@ -266,6 +270,10 @@
 
     advance() {
       if (this.phase !== 'feedback') return this.phase;
+      if (this.answered >= this.total) {
+        this.phase = 'done';
+        return this.phase;
+      }
       if (this.endless) {
         if (this.ended) {
           this.phase = 'done';
@@ -273,10 +281,6 @@
         }
         this.phase = 'answer';
         this.generateQuestion();
-        return this.phase;
-      }
-      if (this.answered >= this.total) {
-        this.phase = 'done';
         return this.phase;
       }
       this.phase = 'answer';
@@ -335,15 +339,15 @@
     if (lang === 'en') {
       const ops = normalized.ops === 'all' ? 'all four' : 'add & subtract';
       if (short) {
-        return `Endless · ${normalized.n}-back · ${normalized.ops === 'all' ? '4 ops' : '+ −'}`;
+        return `Quick · 0–9 · ${normalized.n}-back`;
       }
-      return `Endless · 0–9 · ${normalized.n}-back · ${ops}`;
+      return `Quick · 0–9 · ${normalized.n}-back · ${ops}`;
     }
     const ops = normalized.ops === 'all' ? '加减乘除' : '加减';
     if (short) {
-      return `无尽 · ${normalized.n}回溯 · ${normalized.ops === 'all' ? '四则' : '加减'}`;
+      return `快速 · 0–9 · ${normalized.n}回溯`;
     }
-    return `无尽 · 0–9 · ${normalized.n}-回溯 · ${ops}`;
+    return `快速 · 0–9 · ${normalized.n}-回溯 · ${ops}`;
   }
 
   function questionLabel(question, lang) {
@@ -490,8 +494,20 @@
     return best;
   }
 
+  function findQuickBest(sessions, config) {
+    const normalized = normalizeConfig(config);
+    const quickSessions = (Array.isArray(sessions) ? sessions : []).filter((session) => (
+      session
+      && session.mode === 'endless'
+      && session.total === QUICK_TOTAL
+      && session.correct > QUICK_TOTAL * 0.9
+    ));
+    return findEndlessBest(quickSessions, { ...normalized, ops: 'all', digits: 1 });
+  }
+
   const api = {
     TOTAL_QUESTIONS,
+    QUICK_TOTAL,
     MIN_N,
     MAX_N,
     MAX_SESSIONS,
@@ -516,7 +532,8 @@
     sanitizeSession,
     sanitizeStore,
     findBest,
-    findEndlessBest
+    findEndlessBest,
+    findQuickBest
   };
 
   global.DevilEngine = api;

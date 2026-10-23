@@ -34,15 +34,15 @@
       strip_a1_html: `回答第 1 题 <b>7</b>`,
       setup_title: `设置这一局`,
       round_25: `25 题 / 局`,
-      round_endless: `∞ 无尽`,
+      round_endless: `20 题 / 轮`,
       mode_aria: `训练模式`,
       mode_normal: `25 题训练`,
       mode_normal_sub: `有始有终`,
-      mode_endless: `无尽 · 0–9`,
-      mode_endless_sub: `点数字即答`,
+      mode_endless: `快速 · 0–9`,
+      mode_endless_sub: `20 题一轮`,
       field_back: `回溯层数`,
       field_digits: `数字范围`,
-      field_endless: `无尽规则`,
+      field_endless: `快速规则`,
       field_ops: `运算类型`,
       hint_back_1: `回答上一题的答案`,
       hint_back_2: `回答上上一题的答案`,
@@ -55,7 +55,7 @@
       digits_1_sub: `一位数 + − × ÷，表内乘除`,
       digits_2: `两位数`,
       digits_2_sub: `两位加减 · 两位 ×/÷ 一位`,
-      endless_info: `所有结果都在 0–9 之间。答题时直接点数字，立即提交；没有确认，也没有删除。数字范围设置不会影响本关。`,
+      endless_info: `每轮 20 题，答案固定 0–9，默认使用加减乘除。答完 20 题后结算；正确率超过 90% 可进入更高回溯。数字范围与运算类型设置不适用。`,
       ops_addsub: `加减`,
       ops_addsub_sub: `只出现 + 和 −`,
       ops_all: `加减乘除`,
@@ -64,15 +64,15 @@
       digits_aria: `数字范围`,
       ops_aria: `运算类型`,
       start_normal: `开始训练`,
-      start_endless: `开始无尽`,
+      start_endless: `开始快速`,
       best_none: `当前设置还没有记录`,
       best_normal: `当前设置最佳 {percent}%{speed}`,
       best_speed: ` · {avg}/题`,
-      best_endless_none: `还没有无尽纪录`,
-      best_endless: `无尽最佳 {score} 分 · {percent}%`,
+      best_endless_none: `还没有快速纪录`,
+      best_endless: `快速最佳 {score} 分 · {percent}%`,
       best_storage: ` · 记录不会保存`,
       setup_note_normal: `不限时 · 按自己的节奏`,
-      setup_note_endless: `不限时 · 一直答到你想停`,
+      setup_note_endless: `20 题一轮 · 正确率 >90% 进阶`,
       guide_title: `别答眼前这道题`,
       guide_step1_title: `先算，再记`,
       guide_step1_text: `每题出现时，先算出答案，把它放进脑子里的记忆队列。`,
@@ -95,7 +95,7 @@
       footer_records: `记录仅保存在本机浏览器`,
       game_title_sr: `魔鬼计算训练中`,
       game_quit_exit: `退出`,
-      game_quit_end: `结束`,
+      game_quit_end: `退出`,
       game_hud_label: `无尽 · 0–9`,
       hud_answered: `已答`,
       hud_score: `得分`,
@@ -112,7 +112,7 @@
       result_points: `分`,
       result_new_best: `NEW BEST · 新纪录`,
       result_score_note_normal: `答对一题 100 分，满分 2500 分。`,
-      result_score_note_endless: `无尽模式 · 答对一题 100 分，不设上限。`,
+      result_score_note_endless: `快速模式每轮 20 题 · 答对一题 100 分，满分 2000。`,
       result_stat_correct: `答对`,
       result_stat_streak: `最长连击`,
       result_stat_avg: `平均每题`,
@@ -120,11 +120,19 @@
       result_pattern: `答题轨迹`,
       result_pattern_aria: `本局答题轨迹`,
       result_play_again: `再来一局`,
-      result_play_endless: `再战无尽`,
+      result_play_endless: `再战快速`,
+      result_play_next: `进入 {next} 回溯`,
+      result_title_quick_pass: `晋级成功。`,
+      result_title_quick_max: `最高回溯，稳。`,
+      result_title_quick_fail: `还差一点。`,
+      quick_pass_msg: `正确率 {percent}% — 通过，可以进入 {next} 回溯。`,
+      quick_max_msg: `正确率 {percent}% — 已在最高 5 回溯。`,
+      quick_fail_msg: `正确率 {percent}% — 需要超过 90% 才能进阶。`,
+      quick_09: `快速 · 0–9`,
       result_adjust: `调整设置`,
       result_history: `查看训练记录`,
       result_foot_normal: `同一设置下，正确率相同则平均用时更短者刷新纪录。`,
-      result_foot_endless: `无尽模式按总得分计算纪录；同分时正确率更高者优先。`,
+      result_foot_endless: `快速模式按得分计算纪录；完成 20 题且正确率超过 90% 进入下一回溯。`,
       history_title: `训练记录`,
       history_sub: `只保存在当前浏览器`,
       history_sub_count: `共 {count} 次训练 · 按时间倒序`,
@@ -145,7 +153,7 @@
       help_step2_title: `开始回溯`,
       help_step2_text: `从第 N+1 题起，要回答的是 N 题前那道题的答案。当前题只需要继续计算并记住，不要回答它的答案。`,
       help_step3_title: `连续训练`,
-      help_step3_text: `普通局 25 题；无尽关一直答到你想停。答错不中断，会显示旧题的正确答案。`,
+      help_step3_text: `普通局 25 题；快速模式每轮 20 题，整轮正确率超过 90% 可进入更高回溯。答错不中断，会显示旧题的正确答案。`,
       help_example_1: `2-回溯 · 第 1 题`,
       help_example_2: `第 2 题`,
       help_example_3: `第 3 题出现时`,
@@ -153,27 +161,27 @@
       help_answer: `回答 7`,
       help_note_time_html: `<b>计时：</b>不限时，按自己的节奏。总用时和平均每题时间会记录在成绩里。`,
       help_note_gen_html: `<b>出题：</b>减法保证非负，除法保证整除。两位数模式下，加减为两位 ± 两位，乘除为两位 ×/÷ 一位。`,
-      help_note_endless_html: `<b>无尽关：</b>所有答案固定为 0–9。答题时点一下数字就立即提交，没有确认和删除；难度仍由回溯层数和运算类型决定。`,
+      help_note_endless_html: `<b>快速模式：</b>每轮 20 题，答案固定 0–9，默认使用加减乘除。整轮正确率超过 90% 进入更高回溯；中途退出不保存本轮。`,
       help_note_records_html: `<b>记录：</b>只保存在本机浏览器，不上传任何数据。换浏览器或清除站点数据会清空记录。`,
       help_done: `知道了`,
       close_aria: `关闭`,
       quit_kicker_normal: `END ROUND`,
-      quit_kicker_endless: `END ENDLESS`,
+      quit_kicker_endless: `END QUICK`,
       quit_title_normal: `结束本局？`,
-      quit_title_endless: `结束无尽挑战？`,
+      quit_title_endless: `结束快速挑战？`,
       quit_text_no_answers: `还没有作答，结束后会直接回到设置。`,
-      quit_text_endless: `已答 {answered} 题，得分 {score}。结束后会生成本次无尽成绩。`,
+      quit_text_endless: `已答 {answered} / 20。退出后本轮不会保存。`,
       quit_text_normal: `已答 {answered} / {total}。退出后本局进度不会保存。`,
       quit_confirm_no: `结束挑战`,
-      quit_confirm_endless: `结束并结算`,
+      quit_confirm_endless: `退出本轮`,
       quit_confirm_normal: `退出本局`,
       quit_cancel_endless: `继续挑战`,
       quit_cancel_normal: `继续训练`,
-      quit_exited: `本局已退出`,
+      quit_exited: `本轮已退出`,
       countdown_normal: `先记住 {count} 道题，再开始回溯`,
       countdown_normal_one: `先记住 1 道题，再开始回溯`,
-      countdown_endless: `先记住 {count} 道题，再开始无尽`,
-      countdown_endless_one: `先记住 1 道题，再开始无尽`,
+      countdown_endless: `先记住 {count} 道题，再开始快速`,
+      countdown_endless_one: `先记住 1 道题，再开始快速`,
       countdown_go: `开始`,
       nudge_input: `先输入一个答案`,
       start_fail: `开局失败，请刷新页面后重试`,
@@ -183,7 +191,7 @@
       title_home: `魔鬼计算 · N-Back 心算训练`,
       title_game: `训练中 · 魔鬼计算`,
       title_result: `本局结果 · 魔鬼计算`,
-      meta_description: `一个完全离线的 N-back 心算训练小游戏：支持 1–5 回溯、个位/两位数、加减与四则运算，以及 0–9 无尽关。`,
+      meta_description: `一个完全离线的 N-back 心算训练小游戏：支持 1–5 回溯、个位/两位数、加减与四则运算，以及每轮 20 题的 0–9 快速模式。`,
       state_warm: `记忆热身 {current} / {n}`,
       state_answer: `回答 {prompt}`,
       sub_warm: `算出答案，记在心里；稍后会被问到`,
@@ -207,7 +215,7 @@
       feedback_endless_wrong: `✗ 答案是 {answer} · {text}`,
       wrong_input: `你输入了 {value}`,
       result_eyebrow_normal: `ROUND COMPLETE · 本局完成`,
-      result_eyebrow_endless: `ENDLESS · 无尽结束`,
+      result_eyebrow_endless: `QUICK · 快速完成`,
       result_title_normal_S: `完美，魔鬼也服气。`,
       result_title_normal_A: `稳得很。`,
       result_title_normal_B: `节奏不错，还能更稳。`,
@@ -222,7 +230,7 @@
       pattern_legend_long: `最近 {count} 题 · 绿=答对 · 红=答错`,
       pattern_legend_short: `绿=答对 · 红=答错`,
       pattern_aria_normal: `本局答题轨迹，共 {total} 题：{labels}`,
-      pattern_aria_endless: `无尽答题轨迹，共 {total} 题，显示最近 {shown} 题，答对 {correct} 题`,
+      pattern_aria_endless: `快速答题轨迹，共 {total} 题，显示最近 {shown} 题，答对 {correct} 题`,
       pattern_item_title: `第 {n} 题：{result}`,
       pattern_item_label: `第 {n} 题{result}`,
       pattern_correct: `正确`,
@@ -273,15 +281,15 @@
       strip_a1_html: `Answer Q1 <b>7</b>`,
       setup_title: `Set up this round`,
       round_25: `25 / round`,
-      round_endless: `∞ Endless`,
+      round_endless: `20 / round`,
       mode_aria: `Training mode`,
       mode_normal: `25-question`,
       mode_normal_sub: `Finite round`,
-      mode_endless: `Endless · 0–9`,
-      mode_endless_sub: `Tap to answer`,
+      mode_endless: `Quick · 0–9`,
+      mode_endless_sub: `20 questions`,
       field_back: `Back level`,
       field_digits: `Number range`,
-      field_endless: `Endless rules`,
+      field_endless: `Quick rules`,
       field_ops: `Operations`,
       hint_back_1: `Answer 1 back`,
       hint_back_2: `Answer 2 back`,
@@ -294,7 +302,7 @@
       digits_1_sub: `1-digit + − × ÷, times-table division`,
       digits_2: `2-digit`,
       digits_2_sub: `2-digit + − · 2-digit ×/÷ 1-digit`,
-      endless_info: `Every answer is 0–9. Tap a digit to submit instantly — no confirm or delete. The number-range setting doesn't apply.`,
+      endless_info: `20 questions per round with answers fixed to 0–9 and all four operations. After 20, an accuracy above 90% unlocks the next back level. Number-range and operation settings don't apply.`,
       ops_addsub: `Add & subtract`,
       ops_addsub_sub: `+ and − only`,
       ops_all: `All four`,
@@ -303,15 +311,15 @@
       digits_aria: `Number range`,
       ops_aria: `Operations`,
       start_normal: `Start training`,
-      start_endless: `Start endless`,
+      start_endless: `Start quick`,
       best_none: `No record for this setup yet`,
       best_normal: `Best for this setup: {percent}%{speed}`,
       best_speed: ` · {avg}/q`,
-      best_endless_none: `No endless record yet`,
-      best_endless: `Endless best: {score} pts · {percent}%`,
+      best_endless_none: `No quick record yet`,
+      best_endless: `Quick best: {score} pts · {percent}%`,
       best_storage: ` · records won't be saved`,
       setup_note_normal: `Untimed · go at your own pace`,
-      setup_note_endless: `Untimed · stop whenever you like`,
+      setup_note_endless: `20 questions · >90% to level up`,
       guide_title: `Don't answer the current one`,
       guide_step1_title: `Compute, then hold`,
       guide_step1_text: `Work out each answer and keep it in your mental queue.`,
@@ -334,7 +342,7 @@
       footer_records: `Records stay in this browser`,
       game_title_sr: `Devil Calculation training`,
       game_quit_exit: `Exit`,
-      game_quit_end: `End`,
+      game_quit_end: `Exit`,
       game_hud_label: `Endless · 0–9`,
       hud_answered: `Answered`,
       hud_score: `Score`,
@@ -351,7 +359,7 @@
       result_points: `pts`,
       result_new_best: `NEW BEST`,
       result_score_note_normal: `100 points per correct answer · max 2,500.`,
-      result_score_note_endless: `Endless · 100 points per correct answer, no cap.`,
+      result_score_note_endless: `Quick mode: 20 questions · 100 points each, max 2,000.`,
       result_stat_correct: `Correct`,
       result_stat_streak: `Best streak`,
       result_stat_avg: `Avg / question`,
@@ -359,11 +367,19 @@
       result_pattern: `Answer track`,
       result_pattern_aria: `Answer track for this round`,
       result_play_again: `Play again`,
-      result_play_endless: `Run endless again`,
+      result_play_endless: `Run quick again`,
+      result_play_next: `Try {next} back`,
+      result_title_quick_pass: `Level up.`,
+      result_title_quick_max: `Top level, solid.`,
+      result_title_quick_fail: `Not quite yet.`,
+      quick_pass_msg: `{percent}% — passed. Next: {next} back.`,
+      quick_max_msg: `{percent}% at the top level (5 back).`,
+      quick_fail_msg: `{percent}% — above 90% is needed to level up.`,
+      quick_09: `Quick · 0–9`,
       result_adjust: `Adjust settings`,
       result_history: `View training log`,
       result_foot_normal: `For the same setup, a faster average breaks a tie.`,
-      result_foot_endless: `Endless records go by score; a higher accuracy breaks a tie.`,
+      result_foot_endless: `Quick records go by score; finish all 20 above 90% to unlock the next back level.`,
       history_title: `Training log`,
       history_sub: `Saved only in this browser`,
       history_sub_count: `{count} sessions · newest first`,
@@ -384,7 +400,7 @@
       help_step2_title: `Start looking back`,
       help_step2_text: `From question N+1, answer the question N steps back. Keep solving the current one — don't enter its answer.`,
       help_step3_title: `Keep training`,
-      help_step3_text: `25 questions in a normal round; endless runs until you stop. A wrong answer shows the old correction and continues.`,
+      help_step3_text: `25 questions in a normal round; quick mode runs 20 questions per round, and above 90% accuracy unlocks the next back level. A wrong answer shows the old correction and continues.`,
       help_example_1: `2-back · Q1`,
       help_example_2: `Q2`,
       help_example_3: `When Q3 appears`,
@@ -392,27 +408,27 @@
       help_answer: `answer 7`,
       help_note_time_html: `<b>Timing:</b> Untimed. Total and average time are recorded.`,
       help_note_gen_html: `<b>Questions:</b> Subtraction is non-negative and division is exact. In 2-digit mode, + − use two-digit operands; ×/÷ pair a two-digit number with a one-digit number.`,
-      help_note_endless_html: `<b>Endless:</b> Answers are fixed 0–9. Tap a digit to submit — no confirm or delete. Difficulty follows the back level and operation type.`,
+      help_note_endless_html: `<b>Quick mode:</b> 20 questions per round, answers 0–9, all four operations. Finish above 90% accuracy to unlock the next back level; quitting early discards the round.`,
       help_note_records_html: `<b>Records:</b> Stored in this browser only. No data is uploaded. Changing browsers or clearing site data clears them.`,
       help_done: `Got it`,
       close_aria: `Close`,
       quit_kicker_normal: `END ROUND`,
-      quit_kicker_endless: `END ENDLESS`,
+      quit_kicker_endless: `END QUICK`,
       quit_title_normal: `End this round?`,
-      quit_title_endless: `End the endless run?`,
+      quit_title_endless: `End the quick run?`,
       quit_text_no_answers: `No answers yet — ending will return to setup.`,
-      quit_text_endless: `Answered {answered}, score {score}. Ending will save this endless result.`,
+      quit_text_endless: `Answered {answered} / 20. This round won't be saved.`,
       quit_text_normal: `Answered {answered} / {total}. This round won't be saved.`,
       quit_confirm_no: `End run`,
-      quit_confirm_endless: `End & see result`,
+      quit_confirm_endless: `Exit round`,
       quit_confirm_normal: `Exit round`,
       quit_cancel_endless: `Keep going`,
       quit_cancel_normal: `Keep training`,
       quit_exited: `Round exited`,
       countdown_normal: `Memorize {count} questions first, then start`,
       countdown_normal_one: `Memorize 1 question first, then start`,
-      countdown_endless: `Memorize {count} questions first, then start endless`,
-      countdown_endless_one: `Memorize 1 question first, then start endless`,
+      countdown_endless: `Memorize {count} questions first, then start quick`,
+      countdown_endless_one: `Memorize 1 question first, then start quick`,
       countdown_go: `Go`,
       nudge_input: `Enter an answer first`,
       start_fail: `Couldn't start — refresh and try again`,
@@ -422,7 +438,7 @@
       title_home: `Devil Calculation · N-Back Mental Math`,
       title_game: `Training · Devil Calculation`,
       title_result: `Result · Devil Calculation`,
-      meta_description: `An offline N-back mental math game with 1–5 back, single or two-digit questions, add/subtract or all four operations, and a 0–9 endless mode.`,
+      meta_description: `An offline N-back mental math game with 1–5 back, single or two-digit questions, add/subtract or all four operations, and a 20-question 0–9 quick mode.`,
       state_warm: `Memorize {current} / {n}`,
       state_answer: `Answer {prompt}`,
       sub_warm: `Work it out and hold it — you'll be asked later`,
@@ -446,7 +462,7 @@
       feedback_endless_wrong: `✗ Answer {answer} · {text}`,
       wrong_input: `You entered {value}`,
       result_eyebrow_normal: `ROUND COMPLETE`,
-      result_eyebrow_endless: `ENDLESS · COMPLETE`,
+      result_eyebrow_endless: `QUICK · COMPLETE`,
       result_title_normal_S: `Perfect. Even the devil bows.`,
       result_title_normal_A: `Rock solid.`,
       result_title_normal_B: `Good rhythm — make it steadier.`,
@@ -461,7 +477,7 @@
       pattern_legend_long: `Last {count} · green = correct · red = wrong`,
       pattern_legend_short: `green = correct · red = wrong`,
       pattern_aria_normal: `Round answer track, {total} questions: {labels}`,
-      pattern_aria_endless: `Endless answer track · {total} answered · last {shown} shown · {correct} correct`,
+      pattern_aria_endless: `Quick answer track · {total} answered · last {shown} shown · {correct} correct`,
       pattern_item_title: `Q{n}: {result}`,
       pattern_item_label: `Q{n} {result}`,
       pattern_correct: `correct`,
@@ -697,6 +713,7 @@
       button.tabIndex = active ? 0 : -1;
     });
     $('digits-field').hidden = endless;
+    $('ops-field').hidden = endless;
     $('endless-info').hidden = !endless;
     $('round-badge').textContent = t(endless ? 'round_endless' : 'round_25');
     $('start-label').textContent = t(endless ? 'start_endless' : 'start_normal');
@@ -709,10 +726,10 @@
     if (!note) return;
 
     if (app.setupMode === 'endless') {
-      const best = E.findEndlessBest(app.sessions, {
+      const best = E.findQuickBest(app.sessions, {
         n: app.settings.n,
         digits: 1,
-        ops: app.settings.ops
+        ops: 'all'
       });
       let text = t('best_endless_none');
       if (best) {
@@ -793,14 +810,12 @@
     $('game-config').textContent = endless
       ? E.endlessLabel(game.config, true, app.language)
       : E.configLabel(game.config, false, app.language);
-    $('progress-block').hidden = endless;
-    $('endless-hud').hidden = !endless;
-    $('endless-answered').textContent = '0';
-    $('endless-score').textContent = '0';
+    $('progress-block').hidden = false;
     $('quit-label').textContent = t(endless ? 'game_quit_end' : 'game_quit_exit');
-    $('progress-text').textContent = endless
-      ? t('progress_endless', { answered: 0 })
-      : t('progress_normal', { answered: 0, total: session.total });
+    $('progress-text').textContent = t('progress_normal', {
+      answered: 0,
+      total: session.total
+    });
     $('score-text').textContent = t('score', { score: 0 });
     $('elapsed').textContent = '00:00';
     $('streak').textContent = '0';
@@ -929,14 +944,6 @@
     if (!game) return;
     const session = game.session;
 
-    if (game.mode === 'endless') {
-      $('endless-answered').textContent = String(session.answered);
-      $('endless-score').textContent = formatNumber(session.score);
-      $('progress-text').textContent = t('progress_endless', { answered: session.answered });
-      $('score-text').textContent = t('score', { score: formatNumber(session.score) });
-      return;
-    }
-
     const segments = $('segments').children;
     for (let index = 0; index < session.total; index += 1) {
       const segment = segments[index];
@@ -963,16 +970,6 @@
     const streakWrap = $('streak-wrap');
     $('streak').textContent = String(session.streak);
     streakWrap.classList.toggle('hot', session.streak > 0);
-
-    if (game.mode === 'endless') {
-      $('endless-score').textContent = formatNumber(session.score);
-      if (bump) {
-        const endlessScore = $('endless-score');
-        endlessScore.classList.remove('bump');
-        void endlessScore.offsetWidth;
-        endlessScore.classList.add('bump');
-      }
-    }
 
     if (bump) {
       const score = $('score-text');
@@ -1237,8 +1234,8 @@
 
       if (gameMode === 'endless') {
         const base = E.normalizeConfig(rawConfig || app.settings);
-        config = { n: base.n, digits: 1, ops: base.ops };
-        app.settings = E.normalizeConfig({ ...app.settings, n: base.n, ops: base.ops });
+        config = { n: base.n, digits: 1, ops: 'all' };
+        app.settings = E.normalizeConfig({ ...app.settings, n: base.n });
         app.setupMode = 'endless';
         applySettingsUI();
         applySetupModeUI();
@@ -1252,11 +1249,12 @@
         persist();
       }
 
+      const isQuick = gameMode === 'endless';
       const session = new E.GameSession(
         config,
-        gameMode === 'endless' ? Number.POSITIVE_INFINITY : E.TOTAL_QUESTIONS,
+        isQuick ? E.QUICK_TOTAL : E.TOTAL_QUESTIONS,
         undefined,
-        { endless: gameMode === 'endless' }
+        { endless: isQuick, finite: isQuick }
       );
       const game = {
         mode: gameMode,
@@ -1417,7 +1415,8 @@
     const session = game.session;
     clearGameTimers(game);
 
-    if (session.answered === 0) {
+    const completed = session.answered >= E.QUICK_TOTAL;
+    if (!completed) {
       session.end();
       app.game = null;
       showScreen('home');
@@ -1438,7 +1437,7 @@
       mode: 'endless',
       n: session.n,
       digits: 1,
-      ops: session.ops,
+      ops: 'all',
       correct: session.correct,
       total: answered,
       score: session.score,
@@ -1448,24 +1447,29 @@
     };
     session.end();
 
-    const bestBefore = E.findEndlessBest(app.sessions, {
+    const bestBefore = E.findQuickBest(app.sessions, {
       n: session.n,
       digits: 1,
-      ops: session.ops
+      ops: 'all'
     });
     const accuracy = answered > 0 ? session.correct / answered : 0;
     const bestAccuracy = bestBefore && bestBefore.total > 0
       ? bestBefore.correct / bestBefore.total
       : 0;
     const bestSpeed = bestBefore && bestBefore.avgMs > 0 ? bestBefore.avgMs : Infinity;
-    const isRecord = !bestBefore
+    const passed = accuracy > 0.9;
+    const nextN = passed && session.n < E.MAX_N ? session.n + 1 : session.n;
+    const isRecord = passed && (!bestBefore
       || record.score > bestBefore.score
       || (record.score === bestBefore.score && accuracy > bestAccuracy)
-      || (record.score === bestBefore.score && accuracy === bestAccuracy && record.avgMs < bestSpeed);
+      || (record.score === bestBefore.score && accuracy === bestAccuracy && record.avgMs < bestSpeed));
 
     app.sessions.push(record);
     if (app.sessions.length > E.MAX_SESSIONS) {
       app.sessions = app.sessions.slice(-E.MAX_SESSIONS);
+    }
+    if (passed && nextN > session.n) {
+      app.settings = E.normalizeConfig({ ...app.settings, n: nextN });
     }
     persist();
 
@@ -1474,10 +1478,13 @@
       isRecord,
       results: session.results.slice(),
       rank: E.rankFor(record.correct, record.total),
-      mode: 'endless'
+      mode: 'endless',
+      passed,
+      nextN
     };
     app.lastResult = data;
     app.lastMode = 'endless';
+    app.quickNextN = nextN;
     app.game = null;
 
     renderResult(data);
@@ -1485,15 +1492,16 @@
     updateBestNote();
   }
 
+  function quickResultTitle(data) {
+    if (data.passed) {
+      return t(data.nextN > data.record.n ? 'result_title_quick_pass' : 'result_title_quick_max');
+    }
+    return t('result_title_quick_fail');
+  }
+
   function resultTitle(rank) {
     const key = `result_title_normal_${rank}`;
     return t(I18N[app.language] && I18N[app.language][key] ? key : 'result_title_normal_B');
-  }
-
-  function endlessResultTitle(rank, record) {
-    if (record.bestStreak >= 20) return t('result_title_endless_streak');
-    const key = `result_title_endless_${rank}`;
-    return t(I18N[app.language] && I18N[app.language][key] ? key : 'result_title_endless_C');
   }
 
   function buildSuggestion(record, percent) {
@@ -1643,13 +1651,13 @@
 
     $('result-eyebrow-text').textContent = t(endless ? 'result_eyebrow_endless' : 'result_eyebrow_normal');
     $('result-title').textContent = endless
-      ? endlessResultTitle(rank, record)
+      ? quickResultTitle(data)
       : resultTitle(rank);
 
     const config = $('result-config');
     config.replaceChildren();
     const chips = endless
-      ? [t('game_hud_label'), backTag(record.n), opsTag(record.ops)]
+      ? [t('quick_09'), backTag(record.n), opsTag('all')]
       : [backTag(record.n), digitsTag(record.digits), opsTag(record.ops)];
     chips.forEach((text) => {
       const chip = document.createElement('span');
@@ -1669,7 +1677,13 @@
     $('stat-streak').textContent = String(record.bestStreak);
     $('stat-avg').textContent = E.formatAverage(record.avgMs);
     $('stat-time').textContent = E.formatDuration(record.durationMs);
-    $('play-again-label').textContent = t(endless ? 'result_play_endless' : 'result_play_again');
+    if (endless) {
+      $('play-again-label').textContent = data.passed && data.nextN > record.n
+        ? t('result_play_next', { next: data.nextN })
+        : t('result_play_endless');
+    } else {
+      $('play-again-label').textContent = t('result_play_again');
+    }
     $('result-foot').textContent = t(endless ? 'result_foot_endless' : 'result_foot_normal');
 
     const pattern = $('result-pattern');
@@ -1705,9 +1719,19 @@
         })
     );
 
-    const suggestion = endless
-      ? buildEndlessSuggestion(record, percent)
-      : buildSuggestion(record, percent);
+    if (endless) {
+      const gateText = data.passed
+        ? (data.nextN > record.n
+          ? t('quick_pass_msg', { percent, next: data.nextN })
+          : t('quick_max_msg', { percent }))
+        : t('quick_fail_msg', { percent });
+      $('suggestion-text').textContent = gateText;
+      app.suggestionConfig = null;
+      $('suggestion-action').hidden = true;
+      return;
+    }
+
+    const suggestion = buildSuggestion(record, percent);
     $('suggestion-text').textContent = suggestion.text;
     const action = $('suggestion-action');
     if (suggestion.config) {
@@ -1844,24 +1868,16 @@
     const game = app.game;
     const session = game.session;
     const endless = game.mode === 'endless';
-    const noAnswers = endless && session.answered === 0;
 
     $('quit-kicker').textContent = t(endless ? 'quit_kicker_endless' : 'quit_kicker_normal');
     $('quit-title').textContent = t(endless ? 'quit_title_endless' : 'quit_title_normal');
-    $('quit-text').textContent = noAnswers
-      ? t('quit_text_no_answers')
-      : endless
-        ? t('quit_text_endless', {
-          answered: session.answered,
-          score: formatNumber(session.score)
-        })
-        : t('quit_text_normal', {
-          answered: session.answered,
-          total: session.total
-        });
-    $('quit-confirm').textContent = noAnswers
-      ? t('quit_confirm_no')
-      : t(endless ? 'quit_confirm_endless' : 'quit_confirm_normal');
+    $('quit-text').textContent = endless
+      ? t('quit_text_endless', { answered: session.answered })
+      : t('quit_text_normal', {
+        answered: session.answered,
+        total: session.total
+      });
+    $('quit-confirm').textContent = t(endless ? 'quit_confirm_endless' : 'quit_confirm_normal');
     $('quit-cancel').textContent = t(endless ? 'quit_cancel_endless' : 'quit_cancel_normal');
 
     const dialog = $('quit-dialog');
@@ -1975,13 +1991,7 @@
       if (dialog.open) dialog.close();
     });
     $('quit-confirm').addEventListener('click', () => {
-      if (app.game && app.game.mode === 'endless') {
-        const dialog = $('quit-dialog');
-        if (dialog.open) dialog.close();
-        finishEndless();
-      } else {
-        quitCurrentGame();
-      }
+      quitCurrentGame();
     });
 
     $('keypad').addEventListener('click', (event) => {
